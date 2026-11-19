@@ -45,6 +45,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/events/{id}/applicants', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'eventApplicants']);
         Route::patch('/registrations/{id}/selection', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'updateSelection']);
         Route::get('/events/{id}/attendance', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'eventAttendance']);
+        Route::get('/events/{id}/notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'eventLogs']);
+        Route::post('/events/{id}/reminders', [\App\Http\Controllers\Api\V1\NotificationController::class, 'broadcastReminders']);
     });
 
     // ==========================================

@@ -343,6 +343,7 @@
           <button class="tab-btn" onclick="switchTab('tab-participant')">🎟️ Pendaftaran</button>
           <button class="tab-btn" onclick="switchTab('tab-recruitment')">👥 Oprec Panitia</button>
           <button class="tab-btn" onclick="switchTab('tab-attendance')">🎓 Presensi & Sertifikat</button>
+          <button class="tab-btn" onclick="switchTab('tab-notifications')">🔔 Notifikasi & Pengingat</button>
         </nav>
 
         <!-- TAB 0: INTERACTIVE PLAYGROUND (USER DAPAT MENGUBAH / TEST SENDIRI) -->
@@ -390,6 +391,10 @@
                   <option value="event_attendance_stats">GET /api/v1/organizer/events/{id}/attendance (Rekap Presensi Panitia)</option>
                   <option value="verify_cert">GET /api/v1/certificates/verify/{hash} (Verifikasi Publik Sertifikat)</option>
                   <option value="my_certs">GET /api/v1/my-certificates (E-Sertifikat Saya)</option>
+                </optgroup>
+                <optgroup label="7. Notifikasi & Pengingat (Fitur 08)">
+                  <option value="event_notif_logs">GET /api/v1/organizer/events/{id}/notifications (Log Notifikasi)</option>
+                  <option value="broadcast_reminders">POST /api/v1/organizer/events/{id}/reminders (Broadcast Pengingat)</option>
                 </optgroup>
               </select>
             </div>
@@ -759,6 +764,48 @@
             </div>
           </div>
         </div>
+
+        <!-- TAB 7: NOTIFIKASI & PENGINGAT (FITUR 08) -->
+        <div id="tab-notifications" class="tab-content">
+          <div class="action-group">
+            <h4>Monitoring Pengiriman & Log Notifikasi</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Riwayat & Ringkasan Log Notifikasi</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events/{id}/notifications</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadNotificationLogsPlayground()">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="getNotificationLogsSample()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>Pengingat Peserta (Broadcast Queue)</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Broadcast Pengingat Jadwal (H-1)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/organizer/events/{id}/reminders</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadBroadcastPlayground('REMINDER_H1')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="broadcastReminderSample('REMINDER_H1')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Broadcast Pengingat Hari-H (H-3 Jam)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/organizer/events/{id}/reminders</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadBroadcastPlayground('REMINDER_H3')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="broadcastReminderSample('REMINDER_H3')">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Right Response Inspector Panel -->
@@ -1066,7 +1113,15 @@
         },
         event_attendance_stats: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/attendance', body: null },
         verify_cert: { method: 'GET', url: '/api/v1/certificates/verify/GANTI_VERIFY_HASH', body: null },
-        my_certs: { method: 'GET', url: '/api/v1/my-certificates', body: null }
+        my_certs: { method: 'GET', url: '/api/v1/my-certificates', body: null },
+        event_notif_logs: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/notifications', body: null },
+        broadcast_reminders: {
+          method: 'POST',
+          url: '/api/v1/organizer/events/GANTI_EVENT_UUID/reminders',
+          body: {
+            reminder_type: 'REMINDER_H1'
+          }
+        }
       };
 
       const tpl = templates[key];
@@ -1556,6 +1611,30 @@
       } catch (err) {
         renderResponse(null, { error: err.message }, 'GET', '/api/v1/certificates/verify/{hash}');
       }
+    }
+
+    async function loadNotificationLogsPlayground() {
+      const eventId = await getSampleEventId();
+      loadToPlayground('GET', `/api/v1/organizer/events/${eventId}/notifications`);
+    }
+
+    async function getNotificationLogsSample() {
+      const eventId = await getSampleEventId();
+      testRoute(`/api/v1/organizer/events/${eventId}/notifications`);
+    }
+
+    async function loadBroadcastPlayground(type = 'REMINDER_H1') {
+      const eventId = await getSampleEventId();
+      loadToPlayground('POST', `/api/v1/organizer/events/${eventId}/reminders`, {
+        reminder_type: type
+      });
+    }
+
+    async function broadcastReminderSample(type = 'REMINDER_H1') {
+      const eventId = await getSampleEventId();
+      testRoute(`/api/v1/organizer/events/${eventId}/reminders`, 'POST', {
+        reminder_type: type
+      });
     }
   </script>
 </body>

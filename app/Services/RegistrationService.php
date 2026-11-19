@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EventStatusEnum;
 use App\Enums\RegistrationStatusEnum;
+use App\Jobs\SendTicketNotificationJob;
 use App\Models\Event;
 use App\Models\Registration;
 use App\Models\Ticket;
@@ -87,6 +88,10 @@ class RegistrationService
                 'qr_payload' => $qrPayload,
                 'is_checked_in' => false,
             ]);
+
+            DB::afterCommit(function () use ($registration) {
+                SendTicketNotificationJob::dispatch($registration->id);
+            });
 
             return $ticket->load(['registration.event.category', 'registration.user']);
         });

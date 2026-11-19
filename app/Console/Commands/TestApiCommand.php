@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Models\Registration;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -598,6 +600,95 @@ class TestApiCommand extends Command
                 $this->error('   ✗ FAILED: Expected 200, got ' . $myCertsRes->getStatusCode());
                 $failed++;
             }
+        }
+
+        // ==========================================
+        // Fitur 08: Otomasi Notifikasi & Pengingat
+        // ==========================================
+        $this->comment('--- [MODUL FITUR 08: OTOMASI NOTIFIKASI & PENGINGAT] ---');
+
+        $notifService = app(NotificationService::class);
+        $sampleReg = null;
+        if ($attendeeUser && $attendanceEventId) {
+            $sampleReg = Registration::where('user_id', $attendeeUser->id)
+                ->where('event_id', $attendanceEventId)
+                ->first();
+        }
+
+        // 30. Test Resilient Ticket Notification (WhatsApp -> Email Fallback)
+        if ($sampleReg) {
+            $this->comment('30. Testing NotificationService::sendTicketIssuedNotification (Resilient WhatsApp -> Email Fallback)...');
+            $ticketNotifResult = $notifService->sendTicketIssuedNotification($sampleReg);
+
+            if (in_array($ticketNotifResult['status'], ['SENT', 'ALREADY_SENT'], true)) {
+                $chan = $ticketNotifResult['channel'] ?? 'EMAIL';
+                $isFb = ($ticketNotifResult['fallback'] ?? false) ? ' [Fallback Auto Aktif]' : '';
+                $this->info("   ✓ Status: Sukses Terkirim | Saluran: {$chan}{$isFb}");
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: ' . ($ticketNotifResult['error'] ?? 'Gagal mengirim'));
+                $failed++;
+            }
+
+            // 31. Test Idempotency Guard (Prevent Duplicate Resend)
+            $this->comment('31. Testing Notification Idempotency (Prevent Duplicate Notification)...');
+            $duplicateResult = $notifService->sendTicketIssuedNotification($sampleReg);
+
+            if ($duplicateResult['status'] === 'ALREADY_SENT') {
+                $this->info('   ✓ Status: ALREADY_SENT | Proteksi Idempotency Aktif (Duplikasi Pesan Dicegah)');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected ALREADY_SENT, got ' . $duplicateResult['status']);
+                $failed++;
+            }
+        }
+
+        // 32. Test GET /api/v1/organizer/events/{id}/notifications (Organizer Notification Logs)
+        if ($attendanceEventId) {
+            $this->comment('32. Testing GET /api/v1/organizer/events/{id}/notifications (Notification History & Summary)...');
+            $notifLogsRes = $this->dispatchRequest('GET', "/api/v1/organizer/events/{$attendanceEventId}/notifications", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($notifLogsRes->getStatusCode() === 200) {
+                $logsData = json_decode($notifLogsRes->getContent(), true);
+                $summary = $logsData['data']['summary'] ?? [];
+                $totalNotif = $summary['total_notifications'] ?? 0;
+                $this->info("   ✓ Status: 200 OK | Total Log Notifikasi: {$totalNotif} (Terkirim: " . ($summary['sent_count'] ?? 0) . ", Gagal/Fallback: " . ($summary['failed_count'] ?? 0) . ")");
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $notifLogsRes->getStatusCode());
+                $failed++;
+            }
+
+            // 33. Test POST /api/v1/organizer/events/{id}/reminders (Organizer Trigger Manual Reminder)
+            $this->comment('33. Testing POST /api/v1/organizer/events/{id}/reminders (Broadcast Reminder to Registered Participants)...');
+            $broadcastRes = $this->dispatchRequest('POST', "/api/v1/organizer/events/{$attendanceEventId}/reminders", [
+                'reminder_type' => 'REMINDER_H1',
+            ], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($broadcastRes->getStatusCode() === 200) {
+                $bData = json_decode($broadcastRes->getContent(), true);
+                $dispCount = $bData['data']['dispatched_count'] ?? 0;
+                $this->info("   ✓ Status: 200 OK | Pengingat Dijadwalkan ke Antrean Queue untuk {$dispCount} Peserta");
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $broadcastRes->getStatusCode());
+                $failed++;
+            }
+        }
+
+        // 34. Test Artisan Scheduler Command (events:send-reminders)
+        $this->comment('34. Testing Artisan events:send-reminders --dry-run (Scheduler Scan Simulation)...');
+        $exitCode = \Illuminate\Support\Facades\Artisan::call('events:send-reminders', ['--dry-run' => true]);
+        if ($exitCode === 0) {
+            $this->info('   ✓ Status: Exit Code 0 | Scheduler Berhasil Memindai Jadwal Acara');
+            $passed++;
+        } else {
+            $this->error('   ✗ FAILED: events:send-reminders returned exit code ' . $exitCode);
+            $failed++;
         }
 
         // Summary

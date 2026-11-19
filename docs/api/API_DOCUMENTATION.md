@@ -1054,3 +1054,100 @@ Mengambil seluruh e-sertifikat yang diperoleh mahasiswa dari kegiatan yang telah
   }
 }
 ```
+
+---
+
+## 9. Otomasi Notifikasi & Pengingat (WhatsApp & Email)
+
+Modul notifikasi dirancang dengan prinsip **High Resiliency (Ketahanan Tinggi)** dan **Non-Blocking Architecture**:
+1. **Fallback Resilient Otomatis:** Sistem memprioritaskan WhatsApp Gateway (`services.whatsapp`). Jika gateway down, token belum diatur, terjadi timeout, atau mengembalikan error non-2xx, pengiriman **otomatis beralih ke SMTP Email Kampus UII** dalam alur yang sama tanpa kehilangan pesan.
+2. **Proteksi Idempotency:** Tabel `notification_logs` memantau riwayat pengiriman unik berdasarkan tipe pesan (`TICKET_ISSUED`, `REMINDER_H1`, `REMINDER_H3`). Worker yang me-restart antrean tidak akan mengirimkan pesan ganda ke user.
+3. **Queue Jobs & Retry Backoff:** Pengiriman tiket dan reminder dijalankan di antrean latar belakang (`SendTicketNotificationJob`, `SendEventReminderJob`) dengan `tries = 3`, `backoff = [10, 60, 300]`, dan batas timeout 30 detik.
+4. **Artisan Scheduler:** Perintah `php artisan events:send-reminders` dijalankan secara berkala untuk memindai kegiatan H-1 dan H-3 Jam.
+
+---
+
+### 9.1 Riwayat & Ringkasan Log Notifikasi Acara
+Mengambil seluruh log riwayat pengiriman pesan (WhatsApp dan Email) beserta metrik agregat keberhasilan untuk suatu kegiatan.
+- **URL:** `GET /api/v1/organizer/events/{id}/notifications?page=1&per_page=15&channel=WHATSAPP&status=SENT`
+- **Akses:** Panitia Penyelenggara Kegiatan atau Super Admin (`ORGANIZER`, `SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+- **Query Parameters (Opsional):**
+  - `channel`: `WHATSAPP` | `EMAIL`
+  - `status`: `SENT` | `FAILED` | `PENDING`
+  - `per_page`: Default `15`, Maksimal `50`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Log riwayat notifikasi kegiatan berhasil diambil.",
+  "data": {
+    "summary": {
+      "total_notifications": 48,
+      "sent_count": 46,
+      "failed_count": 2,
+      "whatsapp_count": 30,
+      "email_count": 18
+    },
+    "notifications": [
+      {
+        "id": 1,
+        "event_id": "event-uuid",
+        "registration_id": "registration-uuid",
+        "participant_name": "Fauzan Mahasiswa UII",
+        "channel": "EMAIL",
+        "recipient": "21523001@students.uii.ac.id",
+        "delivery_status": "SENT",
+        "payload": {
+          "type": "TICKET_ISSUED",
+          "notes": "Fallback otomatis dari WhatsApp ke SMTP Email Kampus UII"
+        },
+        "created_at": "2026-11-19T07:25:03+00:00"
+      }
+    ],
+    "pagination": {
+      "current_page": 1,
+      "last_page": 4,
+      "per_page": 15,
+      "total": 48
+    }
+  },
+  "meta": {
+    "timestamp": "2026-11-19T07:25:03Z",
+    "version": "v1.0"
+  }
+}
+```
+
+---
+
+### 9.2 Broadcast Pengingat Peserta Manual
+Memungkinkan panitia penyelenggara menjadwalkan pengiriman pengingat acara ke seluruh peserta yang terdaftar aktif secara serentak melalui sistem antrean.
+- **URL:** `POST /api/v1/organizer/events/{id}/reminders`
+- **Akses:** Panitia Penyelenggara Kegiatan atau Super Admin (`ORGANIZER`, `SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+- **Request Body (JSON):**
+```json
+{
+  "reminder_type": "REMINDER_H1"
+}
+```
+*Catatan `reminder_type`:* `REMINDER_H1` (Pengingat H-1), `REMINDER_H3` (Pengingat H-3 Jam), atau `REMINDER_MANUAL`.
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Pengingat berhasil dijadwalkan ke dalam antrean untuk 45 peserta terdaftar.",
+  "data": {
+    "event_id": "event-uuid",
+    "reminder_type": "REMINDER_H1",
+    "dispatched_count": 45
+  },
+  "meta": {
+    "timestamp": "2026-11-19T07:25:03Z",
+    "version": "v1.0"
+  }
+}
+```

@@ -59,6 +59,7 @@ php artisan test
 | **Pendaftaran & E-Tiket** | `php artisan test --filter RegistrationTest` | Concurrency lock kuota, database partial unique index anti-double entry, dan penerbitan tiket QR HMAC-SHA256 |
 | **Oprec Panitia & Seleksi** | `php artisan test --filter RecruitmentTest` | Validasi magic bytes PDF CV, pemilihan divisi valid, proteksi anti-double entry, dashboard pelamar panitia, dan update seleksi |
 | **Presensi & Sertifikat** | `php artisan test --filter AttendanceTest` | Scan presensi hari-H dengan `hash_equals()`, anti-double check-in, dan e-sertifikat otomatis |
+| **Notifikasi & Pengingat** | `php artisan test --filter NotificationTest` | Pola resilient WhatsApp $\rightarrow$ Fallback Email, antrean queue job, exponential backoff, idempotency, scheduler pengingat H-1/H-3, dan API log panitia |
 
 ### Opsi Tambahan yang Sangat Berguna Saat Debugging:
 ```bash
@@ -79,7 +80,7 @@ Selain PHPUnit, sistem ini dilengkapi tool siap pakai tanpa instalasi tambahan:
 ```bash
 php artisan api:test
 ```
-*Fungsi:* Command internal yang menjalankan **29 skenario HTTP internal end-to-end**:
+*Fungsi:* Command internal yang menjalankan **34 skenario HTTP internal end-to-end**:
 1. Login akun Panitia LEM FTI
 2. Validasi login password salah (422)
 3. Blokir request tanpa token (401)
@@ -109,6 +110,11 @@ php artisan api:test
 27. Verifikasi keaslian publik E-Sertifikat via verify_hash tanpa autentikasi (200 VALID)
 28. Rekapitulasi metrik kehadiran panitia (total pendaftar, hadir, persentase kehadiran) (200)
 29. Pemuatan daftar E-Sertifikat resmi yang diraih oleh mahasiswa (200)
+30. Pengiriman e-tiket berketahanan tinggi (Resilient WhatsApp $\rightarrow$ SMTP Email UII Fallback)
+31. Pengujian proteksi Idempotency notifikasi (mencegah duplikasi pesan tiket/pengingat)
+32. Pemuatan riwayat log notifikasi dan ringkasan metrik pengiriman untuk panitia (200)
+33. Penjadwalan manual pengingat acara (broadcast reminders) ke antrean queue peserta (200)
+34. Simulasi scan scheduler pengingat otomatis (`events:send-reminders --dry-run`) (Exit Code 0)
 
 ### B. Interactive Web UI Tester (Browser)
 1. Jalankan `php artisan serve`
@@ -217,7 +223,43 @@ php artisan optimize:clear
 
 ---
 
-## 7. Standar Alur Kerja Git (Feature-by-Feature Workflow)
+## 7. Pemrosesan Antrean Background (Queue Worker) & Penjadwal (Scheduler)
+
+Sistem menggunakan background queue jobs (`SendTicketNotificationJob`, `SendEventReminderJob`) untuk menjaga performa pendaftaran dan absensi tetap instan (*non-blocking*):
+
+### Menjalankan Antrean Job Worker (Local / Production)
+```bash
+# Menjalankan worker antrean database dengan retry 3 kali & batas waktu 30 detik
+php artisan queue:work --tries=3 --timeout=30
+
+# Memantau antrean secara ringkas (tanpa daemon loop)
+php artisan queue:listen
+```
+
+### Menjalankan Perintah Pengingat Acara Otomatis (Scheduler CLI)
+```bash
+# Memindai seluruh jadwal acara dan menjadwalkan notifikasi H-1 dan H-3 Jam
+php artisan events:send-reminders
+
+# Memindai hanya pengingat H-1
+php artisan events:send-reminders --type=h1
+
+# Memindai hanya pengingat H-3 Jam
+php artisan events:send-reminders --type=h3
+
+# Menjalankan simulasi kering tanpa memasukkan job ke antrean (Dry-Run)
+php artisan events:send-reminders --dry-run
+```
+
+### Menjalankan Scheduler Laravel Lokal
+```bash
+# Menjalankan proses worker penjadwal yang mengeksekusi events:send-reminders tiap 15 menit
+php artisan schedule:work
+```
+
+---
+
+## 8. Standar Alur Kerja Git (Feature-by-Feature Workflow)
 
 Proyek ini menggunakan konvensi commit semantik (*Conventional Commits*) dan prinsip verifikasi pengujian sebelum melakukan commit:
 
