@@ -240,3 +240,143 @@
   }
 }
 ```
+
+
+---
+
+## 4. Spesifikasi Detail Endpoint Katalog Acara Publik
+
+### 4.1 Ambil Daftar Kategori Kegiatan
+- **URL:** `GET /api/v1/categories`
+- **Akses:** Publik
+- **Headers:** `Accept: application/json`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Daftar kategori kegiatan berhasil dimuat.",
+  "data": [
+    {
+      "id": 1,
+      "name": "Seminar",
+      "slug": "seminar",
+      "description": "Seminar akademik, talkshow inspiratif, dan simposium nasional."
+    },
+    {
+      "id": 2,
+      "name": "Workshop",
+      "slug": "workshop",
+      "description": "Pelatihan keterampilan praktis, hands-on coding, dan sertifikasi keahlian."
+    }
+  ],
+  "meta": {
+    "timestamp": "2026-11-19T05:30:00Z",
+    "version": "1.0"
+  }
+}
+```
+
+---
+
+### 4.2 Ambil Katalog Acara Terpublikasi (Dengan Filter & Paginasi)
+- **URL:** `GET /api/v1/events`
+- **Akses:** Publik
+- **Headers:** `Accept: application/json`
+- **Query Parameters:**
+  - `search` *(string, opsional)*: Kata kunci judul / deskripsi acara (misal `artificial`).
+  - `category` *(string|int, opsional)*: Slug kategori (misal `seminar`) atau ID kategori.
+  - `type` *(string, opsional)*: `PARTICIPANT_EVENT` (Peserta) atau `COMMITTEE_RECRUITMENT` (Oprec).
+  - `page` *(int, opsional, default: 1)*: Halaman aktif.
+  - `limit` *(int, opsional, default: 15, max: 50)*: Jumlah item per halaman.
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Katalog kegiatan berhasil dimuat.",
+  "data": [
+    {
+      "id": "789a-bc01-uuid",
+      "title": "Seminar Nasional AI & Karir Teknologi 2026",
+      "slug": "seminar-nasional-ai-2026",
+      "category": "Seminar",
+      "activity_type": "PARTICIPANT_EVENT",
+      "organizer_name": "Sarah Nabila (LEM FTI UII)",
+      "poster_url": "https://storage.uii-event.id/posters/ai-2026.jpg",
+      "start_time": "2026-11-25T01:30:00.000000Z",
+      "end_time": "2026-11-25T05:00:00.000000Z",
+      "location": "Auditorium KH. Abdurrahman Wahid FTI UII",
+      "quota_total": 250,
+      "quota_remaining": 42,
+      "is_quota_full": false
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 3,
+    "last_page": 1
+  }
+}
+```
+
+---
+
+### 4.3 Ambil Detail Acara Berdasarkan Slug
+- **URL:** `GET /api/v1/events/{slug}`
+- **Akses:** Publik
+- **Headers:** `Accept: application/json`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Detail kegiatan berhasil dimuat.",
+  "data": {
+    "id": "789a-bc01-uuid",
+    "title": "Seminar Nasional AI & Karir Teknologi 2026",
+    "slug": "seminar-nasional-ai-2026",
+    "description": "Membahas tren artificial intelligence masa depan dan kesiapan karir lulusan informatika.",
+    "activity_type": "PARTICIPANT_EVENT",
+    "poster_url": "https://storage.uii-event.id/posters/ai-2026.jpg",
+    "status": "PUBLISHED",
+    "start_time": "2026-11-25T01:30:00.000000Z",
+    "end_time": "2026-11-25T05:00:00.000000Z",
+    "location": "Auditorium KH. Abdurrahman Wahid FTI UII",
+    "quota_total": 250,
+    "quota_remaining": 42,
+    "is_quota_full": false,
+    "category": {
+      "id": 1,
+      "name": "Seminar",
+      "slug": "seminar",
+      "description": "Seminar akademik..."
+    },
+    "organizer": {
+      "id": "user-uuid",
+      "name": "Sarah Nabila (LEM FTI UII)",
+      "email": "lemfti@uii.ac.id",
+      "phone_number": "6282222222222",
+      "faculty": "Fakultas Teknologi Industri"
+    },
+    "divisions": [],
+    "created_at": "2026-11-19T05:00:00.000000Z"
+  },
+  "meta": {
+    "timestamp": "2026-11-19T05:30:00Z",
+    "version": "1.0"
+  }
+}
+```
+*(Catatan: Jika acara bertipe `COMMITTEE_RECRUITMENT`, properti `divisions` akan berisi array daftar divisi yang dibuka beserta kuota masing-masing).*
+
+**Response Gagal — Draf / Tidak Ditemukan (HTTP 404 Not Found):**
+```json
+{
+  "status": "error",
+  "error_code": "ERR_NOT_FOUND",
+  "message": "Kegiatan tidak ditemukan atau belum dipublikasikan.",
+  "errors": []
+}
+```

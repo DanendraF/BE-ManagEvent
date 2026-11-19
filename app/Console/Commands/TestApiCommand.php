@@ -148,6 +148,55 @@ class TestApiCommand extends Command
             }
         }
 
+        // 8. Test GET /api/v1/categories
+        $this->comment('8. Testing GET /api/v1/categories (Public Master Categories)...');
+        $catRes = $this->dispatchRequest('GET', '/api/v1/categories');
+
+        if ($catRes->getStatusCode() === 200 && ($catData = json_decode($catRes->getContent(), true)) && count($catData['data']) >= 5) {
+            $this->info('   ✓ Status: 200 OK | Berhasil memuat ' . count($catData['data']) . ' kategori acara.');
+            $passed++;
+        } else {
+            $this->error('   ✗ FAILED: Expected 200 with categories data, got ' . $catRes->getStatusCode());
+            $failed++;
+        }
+
+        // 9. Test GET /api/v1/events (Public Catalog)
+        $this->comment('9. Testing GET /api/v1/events (Public Published Events Catalog)...');
+        $eventsRes = $this->dispatchRequest('GET', '/api/v1/events');
+
+        if ($eventsRes->getStatusCode() === 200 && ($eventsData = json_decode($eventsRes->getContent(), true)) && isset($eventsData['meta']['total'])) {
+            $this->info('   ✓ Status: 200 OK | Total Event Terpublikasi: ' . $eventsData['meta']['total'] . ' kegiatan.');
+            $passed++;
+        } else {
+            $this->error('   ✗ FAILED: Expected 200 with events list, got ' . $eventsRes->getStatusCode());
+            $failed++;
+        }
+
+        // 10. Test GET /api/v1/events/seminar-nasional-ai-2026 (Detail Event)
+        $this->comment('10. Testing GET /api/v1/events/seminar-nasional-ai-2026 (Event Detail)...');
+        $detailRes = $this->dispatchRequest('GET', '/api/v1/events/seminar-nasional-ai-2026');
+
+        if ($detailRes->getStatusCode() === 200 && ($detailData = json_decode($detailRes->getContent(), true)) && isset($detailData['data']['slug'])) {
+            $this->info('   ✓ Status: 200 OK | Judul: ' . $detailData['data']['title'] . ' | Kuota: ' . $detailData['data']['quota_remaining'] . '/' . $detailData['data']['quota_total']);
+            $passed++;
+        } else {
+            $this->error('   ✗ FAILED: Expected 200 with event detail, got ' . $detailRes->getStatusCode());
+            $failed++;
+        }
+
+        // 11. Test GET /api/v1/events/draf-konser-internal-2026 (Draft event must be hidden -> 404)
+        $this->comment('11. Testing GET /api/v1/events/draf-konser-internal-2026 (Verify Draft is Hidden -> 404)...');
+        $draftRes = $this->dispatchRequest('GET', '/api/v1/events/draf-konser-internal-2026');
+
+        if ($draftRes->getStatusCode() === 404) {
+            $draftData = json_decode($draftRes->getContent(), true);
+            $this->info('   ✓ Status: 404 Not Found (Draft terproteksi) | Error Code: ' . ($draftData['error_code'] ?? 'ERR_NOT_FOUND'));
+            $passed++;
+        } else {
+            $this->error('   ✗ FAILED: Expected 404 for Draft event, got ' . $draftRes->getStatusCode());
+            $failed++;
+        }
+
         // Summary
         $this->info('');
         $this->line('===============================================================');

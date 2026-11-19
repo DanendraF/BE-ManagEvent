@@ -24,6 +24,13 @@ Route::prefix('v1')->group(function () {
     });
 
     // ==========================================
+    // 2. Modul Katalog Kegiatan Publik (Events)
+    // ==========================================
+    Route::get('/categories', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'categories']);
+    Route::get('/events', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'index']);
+    Route::get('/events/{slug}', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'show']);
+
+    // ==========================================
     // Role Verification Ping Endpoints (RBAC Test)
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:ORGANIZER,SUPERADMIN'])->get('/test/organizer-only', function () {

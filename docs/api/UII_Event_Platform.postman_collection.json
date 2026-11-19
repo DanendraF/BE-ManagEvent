@@ -175,7 +175,89 @@
       ]
     },
     {
-      "name": "2. RBAC & Hak Akses",
+      "name": "2. Katalog Acara Publik (Events)",
+      "item": [
+        {
+          "name": "Daftar Kategori Kegiatan",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            }
+          }
+        },
+        {
+          "name": "Katalog Acara Terpublikasi (Semua)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"]
+            }
+          }
+        },
+        {
+          "name": "Katalog Acara dengan Filter & Pencarian",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events?search=artificial&category=seminar&type=PARTICIPANT_EVENT&page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["events"],
+              "query": [
+                { "key": "search", "value": "artificial" },
+                { "key": "category", "value": "seminar" },
+                { "key": "type", "value": "PARTICIPANT_EVENT" },
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Detail Acara (Seminar AI 2026)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/seminar-nasional-ai-2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "seminar-nasional-ai-2026"]
+            }
+          }
+        },
+        {
+          "name": "Detail Acara Oprec (Termasuk Divisi)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/events/oprec-panitia-ospek-2026",
+              "host": ["{{baseUrl}}"],
+              "path": ["events", "oprec-panitia-ospek-2026"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. RBAC & Hak Akses",
       "item": [
         {
           "name": "Test Akses Panitia (Organizer Only)",
