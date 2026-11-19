@@ -151,6 +151,7 @@ php artisan test
 ## 📑 Struktur Dokumentasi Proyek
 
 - 📊 [PROGRESS.md](PROGRESS.md) — Pelacak kemajuan pengembangan fitur per fitur.
+- 🚀 [docs/api/END_TO_END_API_TESTING_GUIDE.md](docs/api/END_TO_END_API_TESTING_GUIDE.md) — Panduan alur pengujian End-to-End REST API terurut dari awal hingga akhir.
 - 🛠️ [docs/COMMANDS_CHEAT_SHEET.md](docs/COMMANDS_CHEAT_SHEET.md) — Panduan lengkap perintah CLI, testing, dan bahan belajar pengembang.
 - 📖 [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md) — Spesifikasi kontrak REST API, payload request/response, dan kamus error.
 - 📝 [docs/commits/](docs/commits/) — Laporan resmi verifikasi pengujian sebelum setiap commit Git dilakukan.

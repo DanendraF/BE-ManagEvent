@@ -75,6 +75,8 @@ php artisan test --filter EventLifecycleTest -v
 
 ## 3. Alat Pengujian Cepat Bawaan Sistem (Custom API Tester)
 
+> 📖 **Panduan Skenario Lengkap:** Untuk panduan urutan pengujian step-by-step dari login, buat event, submit, approval, pendaftaran, oprec, scan presensi, hingga ekspor CSV, silakan baca [docs/api/END_TO_END_API_TESTING_GUIDE.md](api/END_TO_END_API_TESTING_GUIDE.md).
+
 Selain PHPUnit, sistem ini dilengkapi tool siap pakai tanpa instalasi tambahan:
 
 ### A. Pengujian Otomatis CLI Tanpa Membuka Server
