@@ -41,7 +41,7 @@
 ### Seeders:
 - `database/seeders/RoleSeeder.php`
 - `database/seeders/EventCategorySeeder.php`
-- `database/seeders/UserSeeder.php` (Akun demo: Superadmin DPK, Panitia LEM FTI, 2 Mahasiswa)
+- `database/seeders/UserSeeder.php` (Akun demo: Superadmin DPM, Panitia LEM FTI, 2 Mahasiswa)
 
 ---
 
@@ -49,7 +49,7 @@
 
 | Role | Nama | Email | Password | Keterangan |
 |---|---|---|---|---|
-| **SUPERADMIN** | Dr. Ir. Budi Hartono (DPK UII) | `admin.dpk@uii.ac.id` | `Password123!` | Pengelola Kemahasiswaan Kampus |
+| **SUPERADMIN** | Admin DPM UII | `admin.dpm@uii.ac.id` | `Password123!` | Pengelola Kemahasiswaan Kampus |
 | **ORGANIZER** | Sarah Nabila (LEM FTI UII) | `lemfti@uii.ac.id` | `Password123!` | Penyelenggara Kegiatan |
 | **STUDENT** | Ahmad Fauzan (NIM: 21523001) | `21523001@students.uii.ac.id` | `Password123!` | Mahasiswa Informatika FTI |
 | **STUDENT** | Siti Rahmawati (NIM: 21523002) | `21523002@students.uii.ac.id` | `Password123!` | Mahasiswa Manajemen FBE |

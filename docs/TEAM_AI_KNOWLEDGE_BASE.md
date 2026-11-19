@@ -23,7 +23,7 @@ File Markdown ini dirancang khusus oleh **System Analyst** agar setiap anggota t
 
 ### 1.1 Visi & Identitas Proyek
 *   **Nama Proyek:** UII Event Management Platform (Sistem Manajemen Kegiatan Mahasiswa Terpadu).
-*   **Institusi:** Universitas Islam Indonesia (UII) &bull; Lembaga Eksekutif Mahasiswa (LEM) & Direktorat Pembinaan Kemahasiswaan (DPK).
+*   **Institusi:** Universitas Islam Indonesia (UII) &bull; Lembaga Eksekutif Mahasiswa (LEM) & Dewan Perwakilan Mahasiswa (DPM).
 *   **Masalah Utama yang Diselesaikan:**
     1.  *Pendaftaran Manual:* Menggantikan Google Form manual dengan portal terpusat ber-auto-fill data NIM mahasiswa.
     2.  *Double Entry:* Menolak secara mutlak submisi ganda dari NIM yang sama pada event yang sama (Error 409 Conflict).
@@ -71,7 +71,7 @@ File Markdown ini dirancang khusus oleh **System Analyst** agar setiap anggota t
 11. `SCR-PAN-03`: **Rekap Peserta & Presensi** &bull; Tabel pendaftar lengkap, search NIM/Nama, filter status, tombol "Ekspor Excel/CSV", tombol "Buka Scanner".
 12. `SCR-PAN-04`: **Seleksi Oprec Panitia** &bull; Filter divisi, link berkas CV, picker jadwal wawancara, tombol kirim jadwal via WA.
 13. `SCR-PAN-05`: **Web Scanner Meja Registrasi** &bull; Viewfinder kamera laptop/HP, counter kehadiran real-time, Card HIJAU (Valid - Hadir), Card MERAH (Tiket Sudah Dipakai!).
-14. `SCR-ADM-01`: **Kurasi & Approval DPK** &bull; Review draf acara masuk, toggle "Auto-Post ke Instagram @uii.events", tombol Approve / Revisi / Tolak.
+14. `SCR-ADM-01`: **Kurasi & Approval DPM** &bull; Review draf acara masuk, toggle "Auto-Post ke Instagram @uii.events", tombol Approve / Revisi / Tolak.
 15. `SCR-ADM-02`: **Monitoring Log Notifikasi** &bull; Log pengiriman WA Gateway & riwayat URL postingan Meta Instagram API.
 
 ---
@@ -254,7 +254,7 @@ public function register(User $user, Event $event, array $data): Registration
 *   `/my-tickets/:ticket_code` &bull; Tampilan E-Tiket QR Digital (`SCR-MHS-02`).
 *   `/organizer/events` &bull; Dashboard Panitia LEM/UKM (`SCR-PAN-01`).
 *   `/organizer/events/:id/scanner` &bull; Web Scanner Meja Registrasi Kamera (`SCR-PAN-05`).
-*   `/admin/curation` &bull; Dashboard Kurasi & Approval Super Admin DPK (`SCR-ADM-01`).
+*   `/admin/curation` &bull; Dashboard Kurasi & Approval Super Admin DPM (`SCR-ADM-01`).
 
 ### 4.3 Penanganan Error (409 dkk.) di `api.js` (fetch wrapper)
 ```javascript

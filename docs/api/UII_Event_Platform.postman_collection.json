@@ -109,7 +109,7 @@
           }
         },
         {
-          "name": "Login Superadmin (DPK UII)",
+          "name": "Login Superadmin (DPM UII)",
           "event": [
             {
               "listen": "test",
@@ -133,7 +133,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin.dpk@uii.ac.id\",\n  \"password\": \"Password123!\"\n}"
+              "raw": "{\n  \"email\": \"admin.dpm@uii.ac.id\",\n  \"password\": \"Password123!\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/auth/login",

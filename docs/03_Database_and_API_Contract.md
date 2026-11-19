@@ -157,7 +157,7 @@ Terbit otomatis saat `is_checked_in = TRUE`.
 |---|---|---|---|
 | `id` | UUID / BIGINT | PRIMARY KEY | ID sertifikat digital. |
 | `registration_id` | UUID / BIGINT | FK, UNIQUE | Relasi ke pendaftaran peserta yang tervalidasi hadir. |
-| `certificate_number` | VARCHAR(60) | UNIQUE | Nomor seri resmi kampus (contoh `'UII/DPK/CERT/2026/0491'`). |
+| `certificate_number` | VARCHAR(60) | UNIQUE | Nomor seri resmi kampus (contoh `'UII/DPM/CERT/2026/0491'`). |
 | `verify_hash` | VARCHAR(64) | UNIQUE | Hash keaslian untuk verifikasi publik di `/verify/{hash}`. |
 | `issued_at` | TIMESTAMP | NOT NULL | Waktu sertifikat diterbitkan. |
 
@@ -382,7 +382,7 @@ Menyetujui atau menolak draf acara dari LEM/UKM. Jika disetujui, sistem otomatis
 ```json
 {
   "decision": "APPROVED",
-  "review_notes": "Acara telah sesuai standar DPK UII. Disetujui untuk publikasi umum.",
+  "review_notes": "Acara telah sesuai standar DPM UII. Disetujui untuk publikasi umum.",
   "trigger_instagram_post": true
 }
 ```

@@ -22,16 +22,16 @@ class UserSeeder extends Seeder
         $organizerRole = Role::where('name', RoleEnum::ORGANIZER->value)->firstOrFail();
         $studentRole = Role::where('name', RoleEnum::STUDENT->value)->firstOrFail();
 
-        // 1. Super Admin (Direktorat Kemahasiswaan / DPK UII)
+        // 1. Super Admin (Dewan Perwakilan Mahasiswa / DPM UII)
         $superadmin = User::firstOrCreate(
-            ['email' => 'admin.dpk@uii.ac.id'],
+            ['email' => 'admin.dpm@uii.ac.id'],
             [
                 'id' => (string) Str::uuid(),
-                'name' => 'Dr. Ir. Budi Hartono (DPK UII)',
+                'name' => 'Admin DPM UII',
                 'password' => Hash::make('Password123!'),
                 'phone_number' => '6281111111111',
-                'faculty' => 'Direktorat Pembinaan Kemahasiswaan',
-                'study_program' => 'Pusat Manajemen Kampus',
+                'faculty' => 'Dewan Perwakilan Mahasiswa',
+                'study_program' => 'Lembaga Legislatif Mahasiswa',
                 'email_verified_at' => now(),
             ]
         );

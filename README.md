@@ -6,7 +6,7 @@
 [![Sanctum](https://img.shields.io/badge/Sanctum-Token%20Auth-red?style=for-the-badge)](https://laravel.com/docs/sanctum)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-> **Universitas Islam Indonesia (UII)** — Direktorat Pembinaan Kemahasiswaan (DPK) & Lembaga Eksekutif Mahasiswa (LEM)  
+> **Universitas Islam Indonesia (UII)** — Dewan Perwakilan Mahasiswa (DPM) & Lembaga Eksekutif Mahasiswa (LEM)  
 > *Sistem Informasi Manajemen & Publikasi Kegiatan Terpadu Mahasiswa Kampus*
 
 ---
@@ -115,7 +115,7 @@ Semua akun demo di-seed dengan password bawaan: **`Password123!`**
 
 | Role Sistem | Nama Pengguna | Alamat Email | Keterangan Akses |
 |---|---|---|---|
-| **SUPERADMIN** | Dr. Ir. Budi Hartono | `admin.dpk@uii.ac.id` | Hak penuh kurasi, approval acara, & audit log kampus |
+| **SUPERADMIN** | Admin DPM UII | `admin.dpm@uii.ac.id` | Hak penuh kurasi, approval acara, & audit log kampus |
 | **ORGANIZER** | Sarah Nabila (LEM FTI) | `lemfti@uii.ac.id` | Pengelola & konseptor kegiatan ormawa / UKM |
 | **STUDENT** | Ahmad Fauzan (NIM: 21523001) | `21523001@students.uii.ac.id` | Mahasiswa FTI (Pendaftar peserta & tiket) |
 | **STUDENT** | Siti Rahmawati (NIM: 21523002) | `21523002@students.uii.ac.id` | Mahasiswa FBE (Pendaftar peserta & sertifikat) |
@@ -160,4 +160,4 @@ php artisan test
 ---
 
 ## 📄 Lisensi
-Hak Cipta © 2026 Universitas Islam Indonesia. Berlisensi di bawah [MIT License](LICENSE).
+Hak Cipta © 2026 Danendra Farrel Adriansyah. Berlisensi di bawah (LICENSE).

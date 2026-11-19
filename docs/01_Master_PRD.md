@@ -1,6 +1,6 @@
 # Master Product Requirement Document (PRD) — UII Event Management Platform
 
-> **Universitas Islam Indonesia (UII)** — Direktorat Pembinaan Kemahasiswaan (DPK) • Lembaga Eksekutif Mahasiswa (LEM)
+> **Universitas Islam Indonesia (UII)** — Dewan Perwakilan Mahasiswa (DPM) • Lembaga Eksekutif Mahasiswa (LEM)
 > Enterprise Software Architecture & Product Blueprint
 > Sistem Informasi Manajemen Kegiatan Mahasiswa Terpadu
 
@@ -32,7 +32,7 @@
 |---|---|---|---|
 | Lead System Analyst | Fadhil Muhammad, S.Kom. | Engineering & Product Lead | APPROVED (17/11/2026) |
 | Perwakilan Organisasi | Sarah Nabila | Ketua LEM FTI UII | APPROVED (17/11/2026) |
-| Direktorat Kemahasiswaan | Dr. Ir. Budi Hartono, M.T. | DPK Universitas Islam Indonesia | APPROVED (17/11/2026) |
+| Dewan Perwakilan Mahasiswa | Dr. Ir. Budi Hartono, M.T. | DPM Universitas Islam Indonesia | APPROVED (17/11/2026) |
 
 ## Daftar Isi
 
@@ -95,7 +95,7 @@ Melalui wawancara terstruktur dengan pengurus ormawa dan mahasiswa pendaftar, di
 
 ### 2.1 Matriks Stakeholder RACI
 
-| Aktivitas / Modul Sistem | Mahasiswa | Panitia LEM/UKM | DPK Kemahasiswaan | Tim Pengembang |
+| Aktivitas / Modul Sistem | Mahasiswa | Panitia LEM/UKM | DPM Kemahasiswaan | Tim Pengembang |
 |---|---|---|---|---|
 | Perumusan Draf Acara & Penentuan Kuota | I | R | A | C |
 | Kurasi Legalitas & Approval Izin Acara | I | C | A & R (Approver) | I |
@@ -146,7 +146,7 @@ Melalui wawancara terstruktur dengan pengurus ormawa dan mahasiswa pendaftar, di
 
 Fase 1 (MVP) mencakup 6 kelompok kapabilitas utama yang terintegrasi penuh *(dokumen asli menyebut "6", namun mendaftar 7 butir)*:
 
-1. **Katalog Terpusat & Mesin Kurasi Acara** — Manajemen siklus draf kegiatan oleh ormawa, verifikasi berjenjang oleh DPK, pencarian publik terfilter.
+1. **Katalog Terpusat & Mesin Kurasi Acara** — Manajemen siklus draf kegiatan oleh ormawa, verifikasi berjenjang oleh DPM, pencarian publik terfilter.
 2. **Pendaftaran Cerdas 2 Jalur (Dual-Track Registration)** — Pendaftaran peserta acara umum (seminar, workshop, konser) dan seleksi rekrutmen panitia (Oprec) dalam satu sistem.
 3. **Proteksi Integritas Data & Concurrency Guard** — Pencegahan absolut data pendaftar ganda (*anti-double entry*) dan perlindungan kuota gedung via penguncian transaksional database.
 4. **Otomasi Pengingat Omnichannel** — Pengingat berbasis waktu (H-1 dan H-3 jam) memadukan WhatsApp Gateway API dan email SMTP kampus.
@@ -158,7 +158,7 @@ Fase 1 (MVP) mencakup 6 kelompok kapabilitas utama yang terintegrasi penuh *(dok
 
 | Fitur yang Dieliminasi | Alasan | Rencana / Alternatif |
 |---|---|---|
-| Modul Pelaporan Keuangan LPJ Mendalam | LPJ menyangkut aturan akuntansi universitas yang kompleks (nota, perpajakan, audit kas DPK) dan mengaburkan fokus pendaftaran acara. | Dikeluarkan ke Fase 3. Saat ini hanya ekspor rekap demografi & presensi ke Excel untuk dilampirkan ke LPJ fisik. |
+| Modul Pelaporan Keuangan LPJ Mendalam | LPJ menyangkut aturan akuntansi universitas yang kompleks (nota, perpajakan, audit kas DPM) dan mengaburkan fokus pendaftaran acara. | Dikeluarkan ke Fase 3. Saat ini hanya ekspor rekap demografi & presensi ke Excel untuk dilampirkan ke LPJ fisik. |
 | Integrasi Payment Gateway Perbankan (Midtrans/Xendit) | Mayoritas kegiatan gratis. Payment gateway butuh perizinan rekening penampung yayasan (Badan Wakaf UII) dan biaya admin per transaksi. | Fase 1 fokus acara gratis (90% acara kampus). Seminar berbayar: panitia menyematkan instruksi transfer manual dan konfirmasi tiket manual. |
 | Live Chat Real-Time Panitia–Peserta | Butuh infrastruktur WebSocket berbiaya tinggi dan beban moderasi berat. | Diganti tautan langsung ke *WhatsApp Helpdesk Panitia* di halaman detail acara. |
 
@@ -176,16 +176,16 @@ Representasi dari berkas BPMN 2.0 XML di repositori proyek: `D:\AntigravityProje
 
 ### 4.1 Sub-Proses 1: Pengajuan Draf, Kurasi Admin, & Auto-Post Instagram
 
-**Berkas sumber:** `bpmn_01_event_lifecycle_autopost.bpmn` — interaksi antara ormawa penyelenggara, kurator DPK, dan Meta Instagram API.
+**Berkas sumber:** `bpmn_01_event_lifecycle_autopost.bpmn` — interaksi antara ormawa penyelenggara, kurator DPM, dan Meta Instagram API.
 
 ```mermaid
 flowchart LR
   subgraph PANITIA["Panitia LEM / UKM"]
     A([Start]) --> B["Input Data Acara<br/>(Judul, Kuota, Tipe)"]
     B --> C["Unggah Poster<br/>(Rasio 4:5 / 1:1)"]
-    C --> D["Submit Izin DPK<br/>(Status: PENDING)"]
+    C --> D["Submit Izin DPM<br/>(Status: PENDING)"]
   end
-  subgraph ADMIN["Super Admin (DPK)"]
+  subgraph ADMIN["Super Admin (DPM)"]
     E{"Review Kelayakan<br/>& Norma Acara"}
   end
   subgraph SISTEM["Sistem & Meta API"]
@@ -197,7 +197,7 @@ flowchart LR
   E -- Setujui --> G
 ```
 
-**Penjelasan:** Proses diawali pembuatan draf oleh ormawa. Draf yang diajukan masuk antrean *review* Super Admin. Jika DPK menyetujui, event berubah status menjadi `PUBLISHED`. Dalam transaksi yang sama, sistem mendaftarkan tugas ke *background worker* untuk memanggil Meta Graph API (`POST /{ig_user_id}/media` dan `POST /{ig_user_id}/media_publish`) untuk mengunggah dan mempublikasikan poster ke akun Instagram resmi kampus.
+**Penjelasan:** Proses diawali pembuatan draf oleh ormawa. Draf yang diajukan masuk antrean *review* Super Admin. Jika DPM menyetujui, event berubah status menjadi `PUBLISHED`. Dalam transaksi yang sama, sistem mendaftarkan tugas ke *background worker* untuk memanggil Meta Graph API (`POST /{ig_user_id}/media` dan `POST /{ig_user_id}/media_publish`) untuk mengunggah dan mempublikasikan poster ke akun Instagram resmi kampus.
 
 ### 4.2 Sub-Proses 2: Pendaftaran Peserta & Kunci Anti-Double Entry
 
@@ -366,7 +366,7 @@ flowchart TB
 | No. | Proses Bisnis | Data Masukan | Data Keluaran & Data Store |
 |---|---|---|---|
 | 1.0 | Otentikasi & Manajemen Pengguna | Kredensial NIM/Email & Password akun UII | Sesi Token JWT → D1: `users` & D2: `roles` |
-| 2.0 | Manajemen Draf & Kurasi Acara | Formulir acara, berkas poster, izin ormawa, approval DPK | Record Acara → D3: `events`; pemicu Meta API |
+| 2.0 | Manajemen Draf & Kurasi Acara | Formulir acara, berkas poster, izin ormawa, approval DPM | Record Acara → D3: `events`; pemicu Meta API |
 | 3.0 | Transaksi Pendaftaran & Kuota | ID Event, ID Mahasiswa, atribut pilihan formulir | Record Tiket → D4: `registrations` & D5: `tickets` |
 | 4.0 | Mesin Pengingat Terjadwal | Data registrasi aktif & jadwal waktu mulai kegiatan | Payload Pesan WA/Email → D6: `notification_logs` |
 | 5.0 | Validasi Presensi Meja Registrasi | String barcode QR hasil pembacaan kamera | Update status `ATTENDED` & penerbitan ke D7: `certificates` |
@@ -446,12 +446,12 @@ And   Status pengiriman tercatat bernilai "SENT" di tabel notification_logs
 | Lonjakan transaksi di kuota terakhir (*Race Condition*) | SEDANG | TINGGI | **TINGGI (CRITICAL)** | Row-Level Database Locking (`SELECT FOR UPDATE`) dalam satu transaksi atomik. Pendaftar yang kalah cepat dialihkan ke antrean Waiting List tanpa kuota bocor. |
 | Vendor WhatsApp Gateway gangguan / kuota habis | SEDANG | SEDANG | SEDANG | *Fallback Architecture*: antrean pesan mendeteksi kegagalan API WA dan segera mengalihkan ke SMTP Email Kampus UII dalam < 60 detik. |
 | Koneksi internet putus di meja registrasi hari-H | TINGGI | TINGGI | **TINGGI (CRITICAL)** | Web Scanner dilengkapi Service Worker & IndexedDB Offline Cache. Hasil scan divalidasi lokal dan disinkronkan otomatis saat internet kembali. |
-| Penyalahgunaan akun organisasi untuk acara ilegal | RENDAH | TINGGI | SEDANG | Setiap acara berstatus draf non-publik dan **wajib** disetujui akun DPK UII sebelum terlihat mahasiswa umum. |
+| Penyalahgunaan akun organisasi untuk acara ilegal | RENDAH | TINGGI | SEDANG | Setiap acara berstatus draf non-publik dan **wajib** disetujui akun DPM UII sebelum terlihat mahasiswa umum. |
 
 ### 9.2 Kepatuhan Perlindungan Data & Etika Media Sosial Kampus
 
 - **Minimized Data Collection:** Hanya menyimpan data dasar relevan (NIM, Nama, No. WhatsApp, Prodi). NIK dan data sensitif perbankan tidak pernah diminta.
-- **Integritas Akun Instagram Kampus:** Kuota auto-post dibatasi maksimal 5 kali per jam untuk mencegah penalti spam algoritma Meta. Seluruh poster yang terunggah telah melewati persetujuan admin DPK.
+- **Integritas Akun Instagram Kampus:** Kuota auto-post dibatasi maksimal 5 kali per jam untuk mencegah penalti spam algoritma Meta. Seluruh poster yang terunggah telah melewati persetujuan admin DPM.
 
 ---
 

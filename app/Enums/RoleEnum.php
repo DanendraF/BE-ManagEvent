@@ -15,7 +15,7 @@ enum RoleEnum: string
         return match ($this) {
             self::STUDENT => 'Mahasiswa UII',
             self::ORGANIZER => 'Panitia LEM / UKM',
-            self::SUPERADMIN => 'Direktorat Kemahasiswaan (DPK)',
+            self::SUPERADMIN => 'Dewan Perwakilan Mahasiswa (DPM)',
         };
     }
 }

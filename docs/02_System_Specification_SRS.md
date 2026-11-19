@@ -69,7 +69,7 @@ Untuk menjamin prototipe selesai oleh tim 5 orang dalam durasi tes magang, diput
 
 1. **Mahasiswa (Peserta / Pendaftar)** — Mahasiswa aktif UII yang mencari info kegiatan, mendaftar sebagai peserta atau panitia, mengakses tiket, serta mengunduh e-sertifikat.
 2. **Panitia LEM / UKM (Organisasi Penyelenggara)** — Pengurus lembaga kemahasiswaan yang merancang draf kegiatan, memantau pendaftar, menyeleksi calon panitia, melakukan presensi scan QR hari-H, dan menyiarkan pengumuman darurat.
-3. **Super Admin (Direktorat Kemahasiswaan / DPK UII)** — Pengelola tingkat universitas sebagai kurator/penyetuju legalitas kegiatan, pemegang akun resmi Instagram, dan pengawas lalu lintas pengiriman pengingat.
+3. **Super Admin (Dewan Perwakilan Mahasiswa / DPM UII)** — Pengelola tingkat universitas sebagai kurator/penyetuju legalitas kegiatan, pemegang akun resmi Instagram, dan pengawas lalu lintas pengiriman pengingat.
 
 ### 2.2 Matriks Hak Akses (RBAC)
 
@@ -244,7 +244,7 @@ Setiap layar punya kode identifikasi unik untuk memudahkan pelacakan implementas
   - 🟩 **HIJAU:** "VALID: [Nama Mahasiswa] - [NIM] - Presensi Tercatat!" (bip sukses).
   - 🟥 **MERAH:** "PERINGATAN: Tiket sudah pernah digunakan pada pukul 08.15 WIB!" (nada peringatan).
 
-### 5.4 Modul Super Admin Kampus (Direktorat Kemahasiswaan UII)
+### 5.4 Modul Super Admin Kampus (Dewan Perwakilan Mahasiswa UII)
 
 #### SCR-ADM-01: Kurasi & Persetujuan Acara (Approval & Auto-Post IG) — *Akses: Super Admin*
 

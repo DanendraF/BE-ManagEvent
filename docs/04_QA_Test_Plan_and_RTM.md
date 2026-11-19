@@ -71,7 +71,7 @@ Tujuan utama: membuktikan secara empiris bahwa sistem bebas dari kecacatan kriti
 - Skema database DDL telah dimigrasikan ke server staging.
 - Backend API lulus *Smoke Test* untuk endpoint dasar.
 - Frontend terhubung dengan API staging atau mock server.
-- Data uji (NIM mahasiswa, akun LEM, akun DPK) telah di-seed.
+- Data uji (NIM mahasiswa, akun LEM, akun DPM) telah di-seed.
 
 **Exit Criteria:**
 
@@ -97,7 +97,7 @@ Tujuan utama: membuktikan secara empiris bahwa sistem bebas dari kecacatan kriti
 | User Test 2 | NIM `21523002` • Budi Santoso | Mahasiswa (Teknik Industri) | Batas kuota penuh (*Zero Quota*) dan masuk Waiting List. |
 | User Test 3 | NIM `21523003` • Siti Rahma | Mahasiswa (Hukum) | Pembatalan tiket mandiri dan verifikasi pembatasan unduh sertifikat (Alpa). |
 | Organizer 1 | `lem.fti@uii.ac.id` | Panitia Acara (LEM FTI) | Pembuatan draf event, upload poster, eksekusi Web Scanner meja registrasi. |
-| Admin DPK | `dpk.admin@uii.ac.id` | Super Admin Kemahasiswaan | Kurasi, approval event, revisi, dan penolakan draf acara. |
+| Admin DPM | `dpm.admin@uii.ac.id` | Super Admin Kemahasiswaan | Kurasi, approval event, revisi, dan penolakan draf acara. |
 
 ---
 
@@ -240,11 +240,11 @@ RTM adalah bukti jaminan mutu bahwa 100% kebutuhan di PRD telah dipetakan ke kom
 
 #### TC-SOC-01: Kurasi Admin Memublikasikan Poster ke Instagram via API — `UJI INTEGRASI` • P2
 
-**Prasyarat:** Ada acara berstatus `PENDING_APPROVAL` di dashboard DPK; token Meta Graph API terkonfigurasi pada mode sandbox.
+**Prasyarat:** Ada acara berstatus `PENDING_APPROVAL` di dashboard DPM; token Meta Graph API terkonfigurasi pada mode sandbox.
 
 **Langkah:**
 
-1. Login sebagai Super Admin DPK dan buka layar kurasi SCR-ADM-01.
+1. Login sebagai Super Admin DPM dan buka layar kurasi SCR-ADM-01.
 2. Pilih draf acara, pastikan toggle "Auto-Post ke Instagram" aktif (ON).
 3. Klik "Approve & Publish".
 
@@ -263,7 +263,7 @@ RTM adalah bukti jaminan mutu bahwa 100% kebutuhan di PRD telah dipetakan ke kom
 3. Amati status acara dan tombol unduh sertifikat.
 4. Klik "Unduh E-Sertifikat (PDF)".
 
-**Hasil yang diharapkan:** Acara berbadge hijau "Hadir"; tombol unduh aktif (hijau); PDF terunduh memuat nama lengkap mahasiswa, nomor seri resmi (contoh `UII/DPK/CERT/2026/0491`), dan QR link verifikasi.
+**Hasil yang diharapkan:** Acara berbadge hijau "Hadir"; tombol unduh aktif (hijau); PDF terunduh memuat nama lengkap mahasiswa, nomor seri resmi (contoh `UII/DPM/CERT/2026/0491`), dan QR link verifikasi.
 
 #### TC-CRT-02: Penguncian Hak Unduh Sertifikat bagi Peserta Tidak Hadir — `UJI NEGATIF` • P1
 
@@ -280,7 +280,7 @@ RTM adalah bukti jaminan mutu bahwa 100% kebutuhan di PRD telah dipetakan ke kom
 1. Scan QR Code verifikasi di sudut bawah lembar sertifikat PDF.
 2. Peramban membuka tautan publik `https://uii-event.id/verify/{hash_signature}` tanpa login.
 
-**Hasil yang diharapkan:** Halaman verifikasi publik menampilkan "SERTIFIKAT ASLI & TERVERIFIKASI"; menampilkan nama penerima, NIM, nama acara, tanggal pelaksanaan, dan legalitas ormawa penyelenggara yang diakui DPK UII.
+**Hasil yang diharapkan:** Halaman verifikasi publik menampilkan "SERTIFIKAT ASLI & TERVERIFIKASI"; menampilkan nama penerima, NIM, nama acara, tanggal pelaksanaan, dan legalitas ormawa penyelenggara yang diakui DPM UII.
 
 ---
 
