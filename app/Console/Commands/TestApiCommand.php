@@ -65,6 +65,7 @@ class TestApiCommand extends Command
 
         // 2. Test POST /api/v1/auth/login with Invalid Password
         $this->comment('2. Testing POST /api/v1/auth/login (Invalid Password)...');
+        \Illuminate\Support\Facades\RateLimiter::clear('lemfti@uii.ac.id|127.0.0.1');
         $invalidLoginRes = $this->dispatchRequest('POST', '/api/v1/auth/login', [
             'email' => 'lemfti@uii.ac.id',
             'password' => 'SalahPassword!',
@@ -382,6 +383,110 @@ class TestApiCommand extends Command
             }
         }
 
+        // ==========================================
+        // Fitur 06: Jalur Oprec Panitia & Seleksi
+        // ==========================================
+        $oprecEvent = \App\Models\Event::where('activity_type', \App\Enums\ActivityTypeEnum::COMMITTEE_RECRUITMENT->value)
+            ->where('status', \App\Enums\EventStatusEnum::PUBLISHED->value)
+            ->first();
+
+        $recruitmentRegId = null;
+
+        if ($oprecEvent && $studentToken) {
+            // 21. Test POST /api/v1/events/{id}/apply (Student Recruitment Application with CV)
+            $this->comment('21. Testing POST /api/v1/events/{id}/apply (Oprec Application with Hardened CV)...');
+            
+            // Create real temporary PDF file for magic bytes validation
+            $tempCvPath = storage_path('app/temp_cv_' . uniqid() . '.pdf');
+            file_put_contents($tempCvPath, "%PDF-1.4\nTest Curriculum Vitae Content for UII Oprec");
+            
+            $uploadedCv = new \Illuminate\Http\UploadedFile(
+                $tempCvPath,
+                'cv_mahasiswa.pdf',
+                'application/pdf',
+                null,
+                true
+            );
+
+            // Fetch actual first division from event
+            $firstDiv = $oprecEvent->divisions()->first()?->name ?? 'Divisi Acara & Konsep';
+            $secondDiv = $oprecEvent->divisions()->skip(1)->first()?->name ?? 'Divisi Media Kreatif';
+
+            $applyRes = $this->dispatchRequest('POST', "/api/v1/events/{$oprecEvent->id}/apply", [
+                'division_pref_1' => $firstDiv,
+                'division_pref_2' => $secondDiv,
+                'custom_answers' => [
+                    'motivation' => 'Ingin mengembangkan soft skill kepemimpinan.',
+                    'portfolio_url' => 'https://linkedin.com/in/fauzan-student',
+                ],
+            ], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+            ], [
+                'cv_file' => $uploadedCv,
+            ]);
+
+            if ($applyRes->getStatusCode() === 201) {
+                $applyData = json_decode($applyRes->getContent(), true);
+                $recruitmentRegId = $applyData['data']['id'] ?? null;
+                $this->info('   ✓ Status: 201 Created | Divisi: ' . ($applyData['data']['division_pref_1'] ?? 'N/A') . ' | Magic Bytes: Valid');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 201, got ' . $applyRes->getStatusCode() . ' ' . $applyRes->getContent());
+                $failed++;
+            }
+
+            if (file_exists($tempCvPath)) {
+                @unlink($tempCvPath);
+            }
+
+            // 22. Test GET /api/v1/my-applications (Student views their recruitment applications)
+            $this->comment('22. Testing GET /api/v1/my-applications (List My Oprec Applications)...');
+            $myAppsRes = $this->dispatchRequest('GET', '/api/v1/my-applications', [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+            ]);
+
+            if ($myAppsRes->getStatusCode() === 200) {
+                $this->info('   ✓ Status: 200 OK | Berhasil memuat riwayat pendaftaran kepanitiaan');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $myAppsRes->getStatusCode());
+                $failed++;
+            }
+
+            // 23. Test GET /api/v1/organizer/events/{id}/applicants (Organizer views oprec applicants)
+            $this->comment('23. Testing GET /api/v1/organizer/events/{id}/applicants (Organizer Oprec Dashboard)...');
+            $applicantsRes = $this->dispatchRequest('GET', "/api/v1/organizer/events/{$oprecEvent->id}/applicants", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($applicantsRes->getStatusCode() === 200) {
+                $this->info('   ✓ Status: 200 OK | Panitia Berhasil Mengakses Daftar Calon Anggota Panitia');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $applicantsRes->getStatusCode());
+                $failed++;
+            }
+
+            // 24. Test PATCH /api/v1/organizer/registrations/{id}/selection (Organizer updates selection status)
+            if ($recruitmentRegId) {
+                $this->comment('24. Testing PATCH /api/v1/organizer/registrations/{id}/selection (Update Selection)...');
+                $updateSelRes = $this->dispatchRequest('PATCH', "/api/v1/organizer/registrations/{$recruitmentRegId}/selection", [
+                    'selection_status' => \App\Enums\SelectionStatusEnum::INTERVIEW_SCHEDULED->value,
+                    'notes' => 'Wawancara dijadwalkan hari Sabtu, 28 Nov via Zoom.',
+                ], [
+                    'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+                ]);
+
+                if ($updateSelRes->getStatusCode() === 200) {
+                    $this->info('   ✓ Status: 200 OK | Status Berhasil Diubah: INTERVIEW_SCHEDULED dengan Catatan Wawancara');
+                    $passed++;
+                } else {
+                    $this->error('   ✗ FAILED: Expected 200, got ' . $updateSelRes->getStatusCode() . ' ' . $updateSelRes->getContent());
+                    $failed++;
+                }
+            }
+        }
+
         // Summary
         $this->info('');
         $this->line('===============================================================');
@@ -397,28 +502,41 @@ class TestApiCommand extends Command
      *
      * @param array<string, mixed> $parameters
      * @param array<string, mixed> $server
+     * @param array<string, mixed> $files
      */
-    protected function dispatchRequest(string $method, string $uri, array $parameters = [], array $server = []): Response
+    protected function dispatchRequest(string $method, string $uri, array $parameters = [], array $server = [], array $files = []): Response
     {
         // Reset auth guards so multiple sequential requests in the CLI command do not reuse cached users
         app('auth')->forgetGuards();
 
         $server = array_merge([
             'HTTP_ACCEPT' => 'application/json',
-            'CONTENT_TYPE' => 'application/json',
         ], $server);
 
-        $content = in_array(strtoupper($method), ['POST', 'PUT', 'PATCH']) ? json_encode($parameters) : null;
+        if (! empty($files)) {
+            // Multipart form request
+            $request = Request::create(
+                $uri,
+                $method,
+                $parameters,
+                [],
+                $files,
+                $server
+            );
+        } else {
+            $server['CONTENT_TYPE'] = 'application/json';
+            $content = in_array(strtoupper($method), ['POST', 'PUT', 'PATCH']) ? json_encode($parameters) : null;
 
-        $request = Request::create(
-            $uri,
-            $method,
-            [],
-            [],
-            [],
-            $server,
-            $content
-        );
+            $request = Request::create(
+                $uri,
+                $method,
+                [],
+                [],
+                [],
+                $server,
+                $content
+            );
+        }
 
         return app()->handle($request);
     }

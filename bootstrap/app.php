@@ -49,6 +49,21 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 422);
                 }
 
+                // 1b. Unprocessable Entity (e.g. Magic Bytes Mismatch or Invalid Option)
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\UnprocessableEntityHttpException) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error_code' => 'ERR_VALIDATION',
+                        'message' => $e->getMessage() ?: 'Input data atau berkas tidak valid.',
+                        'errors' => [
+                            [
+                                'field' => 'file',
+                                'message' => $e->getMessage(),
+                            ],
+                        ],
+                    ], 422);
+                }
+
                 // 2. Authentication Exception
                 if ($e instanceof AuthenticationException) {
                     return response()->json([

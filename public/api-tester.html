@@ -3,107 +3,723 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API - UII Event Management Platform</title>
+  <title>UII Event Platform — Interactive API Console & Playground</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <style>
     :root {
-      --pico-font-size: 14px;
+      --pico-font-size: 13.5px;
+      --bg-editor: #0f172a;
+      --border-color: #cbd5e1;
+      --primary-color: #0284c7;
     }
-    body { padding: 2rem; max-width: 1200px; margin: auto; }
-    .badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-    .badge-get { background: #0284c7; color: white; }
-    .badge-post { background: #16a34a; color: white; }
-    .badge-200 { background: #22c55e; color: white; }
-    .badge-403 { background: #f97316; color: white; }
-    .badge-422 { background: #ef4444; color: white; }
-    .badge-401 { background: #eab308; color: black; }
-    pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 6px; max-height: 400px; overflow-y: auto; }
-    .card { background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color); padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; }
-    .grid-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    html, body {
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    /* Top Bar */
+    .top-navbar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 0.55rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+      z-index: 10;
+    }
+    .top-navbar h1 {
+      font-size: 1.1rem;
+      margin: 0;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .top-navbar h1 span {
+      color: #94a3b8;
+      font-weight: 400;
+      font-size: 0.95rem;
+    }
+    .session-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .token-chip {
+      background: #1e293b;
+      color: #94a3b8;
+      font-family: monospace;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      border: 1px solid #334155;
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .token-chip.active {
+      color: #4ade80;
+      border-color: #16a34a;
+    }
+    .btn-xs {
+      padding: 0.22rem 0.55rem;
+      font-size: 0.74rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0;
+      border: none;
+      font-weight: 600;
+    }
+    /* Main Layout Split Screen */
+    .main-workspace {
+      display: grid;
+      grid-template-columns: 530px 1fr;
+      flex: 1;
+      overflow: hidden;
+    }
+    /* Left Panel: Tabs & Action Buttons */
+    .left-panel {
+      border-right: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      background: #f8fafc;
+      overflow-y: auto;
+    }
+    .nav-tabs {
+      display: flex;
+      background: #f1f5f9;
+      border-bottom: 1px solid #e2e8f0;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.82rem;
+      color: #64748b;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 0;
+      border-radius: 0;
+      text-align: center;
+    }
+    .tab-btn:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .tab-btn.active {
+      background: #ffffff;
+      color: #0284c7;
+      border-bottom-color: #0284c7;
+    }
+    .tab-content {
+      padding: 0.9rem;
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .action-group {
+      margin-bottom: 0.85rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.75rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .action-group h4 {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      margin-bottom: 0.5rem;
+      font-weight: 700;
+    }
+    .endpoint-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 5px;
+      padding: 0.45rem 0.65rem;
+      margin-bottom: 0.4rem;
+      transition: all 0.15s ease;
+    }
+    .endpoint-row:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+    }
+    .endpoint-meta {
+      flex: 1;
+      overflow: hidden;
+    }
+    .endpoint-meta .label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .endpoint-meta .route {
+      font-family: monospace;
+      font-size: 0.75rem;
+      color: #64748b;
+    }
+    .btn-actions {
+      display: flex;
+      gap: 0.35rem;
+    }
+    .method-tag {
+      font-family: monospace;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 0.12rem 0.35rem;
+      border-radius: 3px;
+      color: #ffffff;
+      display: inline-block;
+    }
+    .tag-get { background: #0284c7; }
+    .tag-post { background: #16a34a; }
+    .tag-put { background: #7c3aed; }
+    .tag-patch { background: #d97706; }
+    .tag-delete { background: #dc2626; }
+
+    /* Playground Styles */
+    .playground-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 0.9rem;
+    }
+    .pg-url-bar {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+    }
+    .pg-url-bar select {
+      width: 105px;
+      font-weight: 700;
+      font-family: monospace;
+      margin: 0;
+    }
+    .pg-url-bar input {
+      flex: 1;
+      font-family: monospace;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+    .btn-send {
+      background: #0284c7;
+      color: white;
+      font-weight: 700;
+      padding: 0 1.25rem;
+      margin: 0;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn-send:hover {
+      background: #0369a1;
+    }
+    .editor-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    textarea.json-editor {
+      width: 100%;
+      height: 180px;
+      font-family: Consolas, 'Fira Code', Menlo, monospace;
+      font-size: 0.82rem;
+      background: #f8fafc;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      border-radius: 5px;
+      padding: 0.6rem;
+      box-sizing: border-box;
+      resize: vertical;
+      line-height: 1.4;
+    }
+
+    /* Right Panel: Live Response Inspector */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      background: #0f172a;
+      overflow: hidden;
+    }
+    .inspector-header {
+      background: #1e293b;
+      padding: 0.6rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+    .inspector-header .info-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #f1f5f9;
+    }
+    .status-badge {
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 0.78rem;
+    }
+    .status-200, .status-201 { background: #15803d; color: #f0fdf4; }
+    .status-401, .status-403 { background: #ea580c; color: #fff; }
+    .status-404 { background: #64748b; color: #fff; }
+    .status-422, .status-500 { background: #b91c1c; color: #fff; }
+    
+    .editor-container {
+      flex: 1;
+      padding: 1rem;
+      overflow: auto;
+    }
+    pre#responseOutput {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      color: #e2e8f0;
+      font-family: Consolas, 'Fira Code', Menlo, monospace;
+      font-size: 0.82rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>🚀 UII Event Platform - Interactive API Tester</h1>
-    <p>Alat pengujian cepat endpoint REST API backend (Laravel 12 + Sanctum + RBAC).</p>
-  </header>
+  <div class="app-container">
+    <!-- Top Bar -->
+    <header class="top-navbar">
+      <h1>🚀 UII Event Platform <span>API Console</span></h1>
+      <div class="session-bar">
+        <div id="roleBadge" class="token-chip">Role: Guest</div>
+        <div id="tokenChip" class="token-chip">Token: -</div>
+        <button class="btn-xs" style="background: #3b82f6; color: white;" onclick="quickLogin('student')">Login Mhs</button>
+        <button class="btn-xs" style="background: #10b981; color: white;" onclick="quickLogin('organizer')">Login Panitia</button>
+        <button class="btn-xs" style="background: #8b5cf6; color: white;" onclick="quickLogin('admin')">Login DPM</button>
+        <button class="btn-xs" style="background: #475569; color: white;" onclick="clearToken()">Logout</button>
+      </div>
+    </header>
 
-  <div class="card">
-    <h3>🔑 Status Sesi Token Aktif</h3>
-    <div style="display: flex; gap: 1rem; align-items: center;">
-      <input type="text" id="tokenInput" placeholder="Belum ada Bearer Token aktif (Login terlebih dahulu di bawah)" readonly style="flex: 1; font-family: monospace;">
-      <button class="secondary" onclick="clearToken()" style="width: auto;">Hapus Token</button>
-    </div>
-  </div>
+    <!-- Split Screen Workspace -->
+    <div class="main-workspace">
+      <!-- Left Controls Panel -->
+      <div class="left-panel">
+        <!-- Feature Category Tabs -->
+        <nav class="nav-tabs">
+          <button class="tab-btn active" onclick="switchTab('tab-playground')">🛠️ Playground</button>
+          <button class="tab-btn" onclick="switchTab('tab-auth')">🔐 Auth & RBAC</button>
+          <button class="tab-btn" onclick="switchTab('tab-catalog')">🎪 Katalog</button>
+          <button class="tab-btn" onclick="switchTab('tab-organizer')">📋 Panitia & DPM</button>
+          <button class="tab-btn" onclick="switchTab('tab-participant')">🎟️ Pendaftaran</button>
+          <button class="tab-btn" onclick="switchTab('tab-recruitment')">👥 Oprec Panitia</button>
+        </nav>
 
-  <div class="grid">
-    <div>
-      <div class="card">
-        <h4>1. Quick Login (Auto-Set Token)</h4>
-        <div class="grid-btns">
-          <button onclick="loginUser('lemfti@uii.ac.id', 'Password123!')">Login Panitia (LEM FTI)</button>
-          <button class="contrast" onclick="loginUser('admin.dpm@uii.ac.id', 'Password123!')">Login Superadmin (DPM)</button>
-          <button class="secondary" onclick="loginUser('21523001@students.uii.ac.id', 'Password123!')">Login Mahasiswa (Fauzan)</button>
-          <button class="outline" onclick="loginUser('lemfti@uii.ac.id', 'WrongPass!')">Test Login Gagal (422)</button>
+        <!-- TAB 0: INTERACTIVE PLAYGROUND (USER DAPAT MENGUBAH / TEST SENDIRI) -->
+        <div id="tab-playground" class="tab-content active">
+          <div class="playground-box">
+            <div style="margin-bottom: 0.6rem;">
+              <label style="font-size: 0.78rem; font-weight: 700; color: #64748b; margin-bottom: 0.2rem;">PILIH TEMPLATE CEPAT (OPSIONAL):</label>
+              <select id="templateSelect" onchange="applyTemplate(this.value)" style="margin: 0; font-size: 0.82rem;">
+                <option value="">-- Kosong (Atur Sendiri dari Awal) --</option>
+                <optgroup label="1. Autentikasi & Akun">
+                  <option value="login_organizer">POST /api/v1/auth/login (Panitia LEM FTI)</option>
+                  <option value="login_student">POST /api/v1/auth/login (Mahasiswa Fauzan)</option>
+                  <option value="login_admin">POST /api/v1/auth/login (Superadmin DPM)</option>
+                  <option value="register_student">POST /api/v1/auth/register (Daftar Mahasiswa Baru)</option>
+                  <option value="auth_me">GET /api/v1/auth/me (Profil Pengguna Aktif)</option>
+                  <option value="auth_logout">POST /api/v1/auth/logout (Revoke Token)</option>
+                </optgroup>
+                <optgroup label="2. Katalog Acara Publik">
+                  <option value="get_categories">GET /api/v1/categories (Master Kategori)</option>
+                  <option value="get_events">GET /api/v1/events (Katalog Acara Terpublikasi)</option>
+                  <option value="get_event_slug">GET /api/v1/events/seminar-nasional-ai-2026 (Detail Acara)</option>
+                </optgroup>
+                <optgroup label="3. Panitia & Kurasi DPM">
+                  <option value="organizer_events">GET /api/v1/organizer/events (Daftar Acara Panitia)</option>
+                  <option value="create_event">POST /api/v1/organizer/events (Buat Draf Acara Baru)</option>
+                  <option value="submit_event">POST /api/v1/organizer/events/{id}/submit (Ajukan ke DPM)</option>
+                  <option value="admin_events">GET /api/v1/admin/events (Daftar Pengajuan DPM)</option>
+                  <option value="approve_event">POST /api/v1/admin/events/{id}/approve (Approve DPM)</option>
+                  <option value="reject_event">POST /api/v1/admin/events/{id}/reject (Tolak DPM)</option>
+                </optgroup>
+                <optgroup label="4. Peserta & E-Tiket">
+                  <option value="register_participant">POST /api/v1/events/{id}/register (Daftar Peserta)</option>
+                  <option value="my_tickets">GET /api/v1/my-tickets (Tiket Aktif Mahasiswa)</option>
+                  <option value="cancel_ticket">POST /api/v1/my-tickets/{code}/cancel (Batal Tiket)</option>
+                  <option value="event_attendees">GET /api/v1/organizer/events/{id}/registrations (Peserta Terdaftar)</option>
+                </optgroup>
+                <optgroup label="5. Oprec Panitia & Seleksi">
+                  <option value="apply_recruitment">POST /api/v1/events/{id}/apply (Daftar Oprec + CV)</option>
+                  <option value="my_applications">GET /api/v1/my-applications (Riwayat Lamaran Saya)</option>
+                  <option value="event_applicants">GET /api/v1/organizer/events/{id}/applicants (Dashboard Pelamar)</option>
+                  <option value="update_selection">PATCH /api/v1/organizer/registrations/{id}/selection (Update Seleksi)</option>
+                </optgroup>
+              </select>
+            </div>
+
+            <!-- URL Bar & Method -->
+            <div class="pg-url-bar">
+              <select id="pgMethod">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="PATCH">PATCH</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+              <input type="text" id="pgEndpoint" value="/api/v1/auth/me" placeholder="/api/v1/...">
+              <button class="btn-send" onclick="executePlaygroundRequest()" id="btnSend">🚀 Kirim</button>
+            </div>
+
+            <!-- Options & Headers -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; font-size: 0.78rem;">
+              <label style="margin: 0; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+                <input type="checkbox" id="pgUseAuth" checked style="margin: 0;">
+                <span>Sertakan Bearer Token Aktif</span>
+              </label>
+              <div style="display: flex; gap: 0.3rem;">
+                <button class="btn-xs" style="background: #e2e8f0; color: #334155;" onclick="formatJsonBody()">Format JSON</button>
+                <button class="btn-xs" style="background: #e2e8f0; color: #334155;" onclick="clearPlaygroundBody()">Kosongkan Body</button>
+              </div>
+            </div>
+
+            <!-- Request Body Mode -->
+            <div style="margin-bottom: 0.5rem; display: flex; gap: 1rem; font-size: 0.78rem;">
+              <label style="cursor: pointer;"><input type="radio" name="bodyType" value="json" checked onchange="toggleBodyType('json')"> JSON (Raw)</label>
+              <label style="cursor: pointer;"><input type="radio" name="bodyType" value="multipart" onchange="toggleBodyType('multipart')"> Multipart (Oprec CV File)</label>
+              <label style="cursor: pointer;"><input type="radio" name="bodyType" value="none" onchange="toggleBodyType('none')"> None (Tanpa Body)</label>
+            </div>
+
+            <!-- JSON Body Editor -->
+            <div id="jsonEditorWrapper">
+              <div class="editor-label">
+                <span>Request Body (JSON):</span>
+                <span id="jsonValidStatus" style="font-size: 0.72rem; color: #16a34a;">Valid JSON</span>
+              </div>
+              <textarea id="pgBody" class="json-editor" placeholder="{ }"></textarea>
+            </div>
+
+            <!-- Multipart CV Upload Controls -->
+            <div id="multipartWrapper" style="display: none; background: #f1f5f9; padding: 0.6rem; border-radius: 5px; border: 1px solid #cbd5e1;">
+              <div style="margin-bottom: 0.4rem;">
+                <label style="font-size: 0.75rem; margin-bottom: 0.2rem;">Divisi Pilihan 1:</label>
+                <input type="text" id="pgDiv1" value="Divisi Acara & Konsep" style="margin: 0; font-size: 0.8rem;">
+              </div>
+              <div style="margin-bottom: 0.4rem;">
+                <label style="font-size: 0.75rem; margin-bottom: 0.2rem;">Divisi Pilihan 2 (Opsional):</label>
+                <input type="text" id="pgDiv2" value="Divisi Media Kreatif" style="margin: 0; font-size: 0.8rem;">
+              </div>
+              <div>
+                <label style="font-size: 0.75rem; margin-bottom: 0.2rem;">Berkas CV PDF (Magic bytes %PDF):</label>
+                <input type="file" id="pgCvFile" accept="application/pdf" style="margin: 0; font-size: 0.8rem;">
+                <small style="color: #64748b; font-size: 0.72rem;">*Jika tidak memilih file, sistem akan membuatkan simulated valid PDF otomatis.</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 1: AUTH & RBAC (PRESET LIST) -->
+        <div id="tab-auth" class="tab-content">
+          <div class="action-group">
+            <h4>Quick Login Sesi</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Login Panitia LEM FTI</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/auth/login</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('POST', '/api/v1/auth/login', {email: 'lemfti@uii.ac.id', password: 'Password123!'})">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="loginUser('lemfti@uii.ac.id', 'Password123!', 'ORGANIZER')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Login Superadmin DPM UII</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/auth/login</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('POST', '/api/v1/auth/login', {email: 'admin.dpm@uii.ac.id', password: 'Password123!'})">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="loginUser('admin.dpm@uii.ac.id', 'Password123!', 'SUPERADMIN')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Login Mahasiswa (Fauzan)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/auth/login</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('POST', '/api/v1/auth/login', {email: '21523001@students.uii.ac.id', password: 'Password123!'})">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="loginUser('21523001@students.uii.ac.id', 'Password123!', 'STUDENT')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Registrasi Mahasiswa Baru</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/auth/register</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('POST', '/api/v1/auth/register', {name: 'Mahasiswa Baru', email: 'mhs_' + Date.now() + '@students.uii.ac.id', password: 'Password123!', password_confirmation: 'Password123!', phone_number: '6281234567890', nim: '22523099', faculty: 'Fakultas Teknologi Industri', study_program: 'Informatika'})">✏️ Edit</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>Profil & Token</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Profil Saya</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/auth/me</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/auth/me')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="fetchMe()">⚡ Kirim</button>
+              </div>
+            </div>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Logout & Revoke Token</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/auth/logout</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('POST', '/api/v1/auth/logout')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="logoutUser()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: KATALOG PUBLIK -->
+        <div id="tab-catalog" class="tab-content">
+          <div class="action-group">
+            <h4>Endpoint Katalog Publik</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Master Kategori Acara</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/categories</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/categories')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/categories')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Katalog Acara Terpublikasi</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/events</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/events')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/events')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Filter Search ('ai')</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/events?search=ai</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/events?search=ai')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/events?search=ai')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Detail Acara (Seminar AI)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/events/seminar-nasional-ai-2026</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/events/seminar-nasional-ai-2026')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/events/seminar-nasional-ai-2026')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Tes Isolasi Draf (Harus 404)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/events/draf-konser-internal-2026</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/events/draf-konser-internal-2026')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/events/draf-konser-internal-2026')">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: PANITIA & DPM -->
+        <div id="tab-organizer" class="tab-content">
+          <div class="action-group">
+            <h4>Manajemen Acara Panitia</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Daftar Acara Milik Saya</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/organizer/events')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/organizer/events')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Buat Draf Acara Baru</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/organizer/events</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('POST', '/api/v1/organizer/events', {title: 'Webinar Riset ' + Date.now(), category_id: 1, description: 'Deskripsi kegiatan custom.', activity_type: 'PARTICIPANT_EVENT', poster_url: 'https://storage.com/poster.jpg', quota_total: 100, start_time: new Date(Date.now() + 864000000).toISOString(), end_time: new Date(Date.now() + 864000000 + 10800000).toISOString(), location: 'Auditorium UII', auto_post_ig: true})">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="createSampleDraft()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>Super Admin Kurasi (DPM)</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Daftar Pengajuan Pending</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/admin/events</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/admin/events')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/admin/events')">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: PENDAFTARAN PESERTA & E-TIKET -->
+        <div id="tab-participant" class="tab-content">
+          <div class="action-group">
+            <h4>Transaksi Pendaftaran</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Daftar Peserta (Event Aktif)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/events/{id}/register</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadRegisterPlayground()">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="registerForEvent()">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Daftar E-Tiket Saya</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/my-tickets</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/my-tickets')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/my-tickets')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Batalkan Tiket Terkini</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/my-tickets/{code}/cancel</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="cancelLatestTicket()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: OPREC PANITIA -->
+        <div id="tab-recruitment" class="tab-content">
+          <div class="action-group">
+            <h4>Jalur Mahasiswa (Pelamar)</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Kirim Lamaran Oprec (+ CV)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/events/{id}/apply</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadApplyOprecPlayground()">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="applyForOprec()">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Riwayat Lamaran Oprec Saya</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/my-applications</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/my-applications')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/my-applications')">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>Dashboard Seleksi Panitia</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Daftar Pelamar Oprec</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events/{id}/applicants</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="getOprecApplicants()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="card">
-        <h4>2. Profil & Autentikasi</h4>
-        <div class="grid-btns">
-          <button onclick="fetchMe()">GET /api/v1/auth/me (Profil)</button>
-          <button class="secondary" onclick="logoutUser()">POST /api/v1/auth/logout</button>
+      <!-- Right Response Inspector Panel -->
+      <div class="right-panel">
+        <div class="inspector-header">
+          <div class="info-bar">
+            <span id="reqMethodBadge" class="method-tag" style="display: none;">GET</span>
+            <span id="reqPath" style="color: #94a3b8;">Menunggu permintaan API...</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <span id="statusBadge" class="status-badge" style="display: none;">HTTP 200 OK</span>
+            <span id="durationBadge" style="font-family: monospace; font-size: 0.75rem; color: #64748b;"></span>
+            <button class="btn-xs" style="background: #334155; color: #f8fafc;" onclick="copyResponse()">Salin JSON</button>
+          </div>
         </div>
-      </div>
 
-      <div class="card">
-        <h4>3. Uji Hak Akses Middleware (RBAC)</h4>
-        <div class="grid-btns">
-          <button onclick="testRoute('/api/v1/test/organizer-only')">GET /api/v1/test/organizer-only</button>
-          <button class="contrast" onclick="testRoute('/api/v1/test/superadmin-only')">GET /api/v1/test/superadmin-only</button>
+        <div class="editor-container">
+          <pre id="responseOutput">// Pilih tab "🛠️ Playground" untuk meracik request sendiri, atau klik "✏️ Edit" pada preset untuk memuatnya ke Playground terlebih dahulu sebelum mengirim...</pre>
         </div>
-      </div>
-
-      <div class="card">
-        <h4>4. Katalog Acara Publik (Fitur 03)</h4>
-        <div class="grid-btns">
-          <button onclick="testRoute('/api/v1/categories')">GET /categories</button>
-          <button onclick="testRoute('/api/v1/events')">GET /events (Semua)</button>
-          <button onclick="testRoute('/api/v1/events?search=artificial')">GET /events?search=ai</button>
-          <button onclick="testRoute('/api/v1/events?category=workshop')">GET /events?category=workshop</button>
-          <button onclick="testRoute('/api/v1/events?type=COMMITTEE_RECRUITMENT')">GET /events?type=Oprec</button>
-          <button onclick="testRoute('/api/v1/events/seminar-nasional-ai-2026')">GET /events/seminar-ai (Detail)</button>
-          <button class="secondary" onclick="testRoute('/api/v1/events/draf-konser-internal-2026')">GET /events/draft (Test 404)</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h4>5. Manajemen Panitia & DPM Approval (Fitur 04)</h4>
-        <div class="grid-btns">
-          <button onclick="testRoute('/api/v1/organizer/events')">GET /organizer/events (Daftar Acara Saya)</button>
-          <button class="secondary" onclick="createSampleDraft()">POST /organizer/events (Buat Draf Baru)</button>
-          <button class="contrast" onclick="testRoute('/api/v1/admin/events')">GET /admin/events (Daftar Pengajuan DPM)</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h4>6. Pendaftaran Peserta & E-Tiket QR (Fitur 05)</h4>
-        <div class="grid-btns">
-          <button onclick="registerForEvent()">POST /events/{id}/register (Daftar Acara Aktif)</button>
-          <button onclick="testRoute('/api/v1/my-tickets')">GET /my-tickets (Tiket Saya)</button>
-          <button class="contrast" onclick="cancelLatestTicket()">POST /my-tickets/{code}/cancel (Batal Tiket)</button>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h4>📡 Live Response Viewer</h4>
-          <span id="statusBadge" class="badge" style="display: none;"></span>
-        </div>
-        <p id="requestInfo" style="font-family: monospace; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;"></p>
-        <pre id="responseOutput">// Klik salah satu tombol di sebelah kiri untuk melihat hasil respons API...</pre>
       </div>
     </div>
   </div>
@@ -111,43 +727,78 @@
   <script>
     const baseUrl = 'http://127.0.0.1:8000';
     let currentToken = localStorage.getItem('api_token') || '';
+    let currentRole = localStorage.getItem('api_role') || 'Guest';
+
+    // Tabs Switcher
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+      
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(tabId));
+      if (activeBtn) activeBtn.classList.add('active');
+      
+      const activeContent = document.getElementById(tabId);
+      if (activeContent) activeContent.classList.add('active');
+    }
 
     function updateTokenUI() {
-      const el = document.getElementById('tokenInput');
+      const chip = document.getElementById('tokenChip');
+      const role = document.getElementById('roleBadge');
       if (currentToken) {
-        el.value = currentToken;
+        chip.innerText = 'Token: ' + currentToken.substring(0, 14) + '...';
+        chip.classList.add('active');
+        role.innerText = 'Role: ' + currentRole;
+        role.classList.add('active');
       } else {
-        el.value = '';
+        chip.innerText = 'Token: -';
+        chip.classList.remove('active');
+        role.innerText = 'Role: Guest (Belum Login)';
+        role.classList.remove('active');
       }
     }
     updateTokenUI();
 
-    function setToken(tok) {
+    function setToken(tok, roleName = 'USER') {
       currentToken = tok;
+      currentRole = roleName;
       localStorage.setItem('api_token', tok);
+      localStorage.setItem('api_role', roleName);
       updateTokenUI();
     }
 
     function clearToken() {
       currentToken = '';
+      currentRole = 'Guest';
       localStorage.removeItem('api_token');
+      localStorage.removeItem('api_role');
       updateTokenUI();
-      renderResponse(null, { message: 'Token telah dibersihkan dari penyimpanan lokal.' });
+      renderResponse(null, { message: 'Sesi token telah dibersihkan dari penyimpanan lokal.' });
     }
 
-    function renderResponse(res, data, method, path) {
+    function renderResponse(res, data, method = '', path = '', duration = 0) {
       const output = document.getElementById('responseOutput');
       const badge = document.getElementById('statusBadge');
-      const info = document.getElementById('requestInfo');
+      const pathEl = document.getElementById('reqPath');
+      const methodBadge = document.getElementById('reqMethodBadge');
+      const durationEl = document.getElementById('durationBadge');
 
       if (method && path) {
-        info.innerText = `${method} ${path}`;
+        methodBadge.style.display = 'inline-block';
+        methodBadge.innerText = method;
+        methodBadge.className = 'method-tag tag-' + method.toLowerCase();
+        pathEl.innerText = path;
+      }
+
+      if (duration > 0) {
+        durationEl.innerText = `${duration}ms`;
+      } else {
+        durationEl.innerText = '';
       }
 
       if (res) {
         badge.style.display = 'inline-block';
         badge.innerText = `HTTP ${res.status} ${res.statusText}`;
-        badge.className = 'badge ' + (res.status === 200 || res.status === 201 ? 'badge-200' : res.status === 403 ? 'badge-403' : res.status === 422 ? 'badge-422' : 'badge-401');
+        badge.className = 'status-badge status-' + res.status;
       } else {
         badge.style.display = 'none';
       }
@@ -155,17 +806,342 @@
       output.innerText = JSON.stringify(data, null, 2);
     }
 
-    async function loginUser(email, password) {
+    function copyResponse() {
+      const text = document.getElementById('responseOutput').innerText;
+      navigator.clipboard.writeText(text);
+      alert('Respons JSON berhasil disalin ke clipboard!');
+    }
+
+    // ==========================================
+    // PLAYGROUND CORE LOGIC
+    // ==========================================
+    function toggleBodyType(type) {
+      const jsonWrapper = document.getElementById('jsonEditorWrapper');
+      const multipartWrapper = document.getElementById('multipartWrapper');
+      
+      if (type === 'json') {
+        jsonWrapper.style.display = 'block';
+        multipartWrapper.style.display = 'none';
+      } else if (type === 'multipart') {
+        jsonWrapper.style.display = 'none';
+        multipartWrapper.style.display = 'block';
+      } else {
+        jsonWrapper.style.display = 'none';
+        multipartWrapper.style.display = 'none';
+      }
+    }
+
+    function formatJsonBody() {
+      const ta = document.getElementById('pgBody');
+      try {
+        if (!ta.value.trim()) return;
+        const parsed = JSON.parse(ta.value);
+        ta.value = JSON.stringify(parsed, null, 2);
+        document.getElementById('jsonValidStatus').innerText = 'Valid JSON';
+        document.getElementById('jsonValidStatus').style.color = '#16a34a';
+      } catch (e) {
+        document.getElementById('jsonValidStatus').innerText = 'Invalid JSON: ' + e.message;
+        document.getElementById('jsonValidStatus').style.color = '#dc2626';
+      }
+    }
+
+    function clearPlaygroundBody() {
+      document.getElementById('pgBody').value = '';
+    }
+
+    function loadToPlayground(method, endpoint, bodyObj = null) {
+      document.getElementById('pgMethod').value = method;
+      document.getElementById('pgEndpoint').value = endpoint;
+      
+      if (bodyObj) {
+        document.querySelector('input[name="bodyType"][value="json"]').checked = true;
+        toggleBodyType('json');
+        document.getElementById('pgBody').value = JSON.stringify(bodyObj, null, 2);
+      } else {
+        if (method === 'GET' || method === 'DELETE') {
+          document.querySelector('input[name="bodyType"][value="none"]').checked = true;
+          toggleBodyType('none');
+          document.getElementById('pgBody').value = '';
+        } else {
+          document.querySelector('input[name="bodyType"][value="json"]').checked = true;
+          toggleBodyType('json');
+          document.getElementById('pgBody').value = '{\n  \n}';
+        }
+      }
+      switchTab('tab-playground');
+    }
+
+    async function loadRegisterPlayground() {
+      try {
+        const evListRes = await fetch(`${baseUrl}/api/v1/events`);
+        const evListData = await evListRes.json();
+        const firstEvent = evListData.data && evListData.data.length > 0 ? evListData.data[0] : null;
+        const evId = firstEvent ? firstEvent.id : 'EVENT_UUID_HERE';
+        
+        loadToPlayground('POST', `/api/v1/events/${evId}/register`, {
+          custom_answers: {
+            dietary: 'Vegetarian',
+            tshirt_size: 'L',
+            source: 'Instagram BSI UII'
+          }
+        });
+      } catch (err) {
+        loadToPlayground('POST', '/api/v1/events/EVENT_UUID_HERE/register', { custom_answers: {} });
+      }
+    }
+
+    async function loadApplyOprecPlayground() {
+      try {
+        const evListRes = await fetch(`${baseUrl}/api/v1/events?type=COMMITTEE_RECRUITMENT`);
+        const evListData = await evListRes.json();
+        const oprecEvent = evListData.data && evListData.data.length > 0 ? evListData.data[0] : null;
+        const evId = oprecEvent ? oprecEvent.id : 'EVENT_UUID_HERE';
+
+        document.getElementById('pgMethod').value = 'POST';
+        document.getElementById('pgEndpoint').value = `/api/v1/events/${evId}/apply`;
+        document.querySelector('input[name="bodyType"][value="multipart"]').checked = true;
+        toggleBodyType('multipart');
+        switchTab('tab-playground');
+      } catch (err) {
+        loadToPlayground('POST', '/api/v1/events/EVENT_UUID_HERE/apply', {});
+      }
+    }
+
+    function applyTemplate(key) {
+      if (!key) return;
+
+      const templates = {
+        login_organizer: {
+          method: 'POST',
+          url: '/api/v1/auth/login',
+          body: { email: 'lemfti@uii.ac.id', password: 'Password123!' }
+        },
+        login_student: {
+          method: 'POST',
+          url: '/api/v1/auth/login',
+          body: { email: '21523001@students.uii.ac.id', password: 'Password123!' }
+        },
+        login_admin: {
+          method: 'POST',
+          url: '/api/v1/auth/login',
+          body: { email: 'admin.dpm@uii.ac.id', password: 'Password123!' }
+        },
+        register_student: {
+          method: 'POST',
+          url: '/api/v1/auth/register',
+          body: {
+            name: 'Ahmad Mahasiswa Baru',
+            email: 'mhs_' + Date.now().toString().slice(-4) + '@students.uii.ac.id',
+            password: 'Password123!',
+            password_confirmation: 'Password123!',
+            phone_number: '6281234567890',
+            nim: '22523' + Math.floor(100 + Math.random() * 900),
+            faculty: 'Fakultas Teknologi Industri',
+            study_program: 'Informatika'
+          }
+        },
+        auth_me: { method: 'GET', url: '/api/v1/auth/me', body: null },
+        auth_logout: { method: 'POST', url: '/api/v1/auth/logout', body: null },
+        get_categories: { method: 'GET', url: '/api/v1/categories', body: null },
+        get_events: { method: 'GET', url: '/api/v1/events?search=&category=&type=', body: null },
+        get_event_slug: { method: 'GET', url: '/api/v1/events/seminar-nasional-ai-2026', body: null },
+        organizer_events: { method: 'GET', url: '/api/v1/organizer/events', body: null },
+        create_event: {
+          method: 'POST',
+          url: '/api/v1/organizer/events',
+          body: {
+            title: 'Simposium Nasional Teknologi ' + Date.now().toString().slice(-4),
+            category_id: 1,
+            description: 'Uji coba pembuatan kegiatan baru via interactive playground.',
+            activity_type: 'PARTICIPANT_EVENT',
+            poster_url: 'https://storage.uii.ac.id/posters/simposium.jpg',
+            quota_total: 150,
+            start_time: new Date(Date.now() + 864000000).toISOString(),
+            end_time: new Date(Date.now() + 864000000 + 10800000).toISOString(),
+            location: 'Auditorium FTI Kampus Terpadu UII',
+            auto_post_ig: true
+          }
+        },
+        submit_event: { method: 'POST', url: '/api/v1/organizer/events/GANTI_DENGAN_EVENT_UUID/submit', body: null },
+        admin_events: { method: 'GET', url: '/api/v1/admin/events?status=PENDING_APPROVAL', body: null },
+        approve_event: { method: 'POST', url: '/api/v1/admin/events/GANTI_DENGAN_EVENT_UUID/approve', body: null },
+        reject_event: {
+          method: 'POST',
+          url: '/api/v1/admin/events/GANTI_DENGAN_EVENT_UUID/reject',
+          body: { rejection_reason: 'Deskripsi dan susunan acara belum lengkap.' }
+        },
+        register_participant: {
+          method: 'POST',
+          url: '/api/v1/events/GANTI_DENGAN_EVENT_UUID/register',
+          body: {
+            custom_answers: {
+              dietary: 'Vegetarian',
+              tshirt_size: 'XL',
+              info_source: 'Website BSI UII'
+            }
+          }
+        },
+        my_tickets: { method: 'GET', url: '/api/v1/my-tickets', body: null },
+        cancel_ticket: { method: 'POST', url: '/api/v1/my-tickets/GANTI_KODE_TIKET/cancel', body: null },
+        event_attendees: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/registrations', body: null },
+        apply_recruitment: {
+          method: 'POST',
+          url: '/api/v1/events/GANTI_EVENT_UUID/apply',
+          body: null
+        },
+        my_applications: { method: 'GET', url: '/api/v1/my-applications', body: null },
+        event_applicants: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/applicants', body: null },
+        update_selection: {
+          method: 'PATCH',
+          url: '/api/v1/organizer/registrations/GANTI_REGISTRATION_UUID/selection',
+          body: {
+            selection_status: 'INTERVIEW_SCHEDULED',
+            notes: 'Jadwal wawancara: Sabtu, 28 Nov via Zoom.'
+          }
+        }
+      };
+
+      const tpl = templates[key];
+      if (!tpl) return;
+
+      document.getElementById('pgMethod').value = tpl.method;
+      document.getElementById('pgEndpoint').value = tpl.url;
+
+      if (key === 'apply_recruitment') {
+        document.querySelector('input[name="bodyType"][value="multipart"]').checked = true;
+        toggleBodyType('multipart');
+      } else if (tpl.body) {
+        document.querySelector('input[name="bodyType"][value="json"]').checked = true;
+        toggleBodyType('json');
+        document.getElementById('pgBody').value = JSON.stringify(tpl.body, null, 2);
+      } else {
+        document.querySelector('input[name="bodyType"][value="none"]').checked = true;
+        toggleBodyType('none');
+        document.getElementById('pgBody').value = '';
+      }
+    }
+
+    async function executePlaygroundRequest() {
+      const method = document.getElementById('pgMethod').value.toUpperCase();
+      let path = document.getElementById('pgEndpoint').value.trim();
+      const useAuth = document.getElementById('pgUseAuth').checked;
+      const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
+      const btnSend = document.getElementById('btnSend');
+
+      if (!path.startsWith('/')) {
+        path = '/' + path;
+      }
+
+      btnSend.disabled = true;
+      btnSend.innerText = 'Mengirim...';
+
+      const headers = {
+        'Accept': 'application/json'
+      };
+
+      if (useAuth && currentToken) {
+        headers['Authorization'] = `Bearer ${currentToken}`;
+      }
+
+      let reqBody = null;
+
+      if (bodyType === 'json' && inArray(method, ['POST', 'PUT', 'PATCH'])) {
+        headers['Content-Type'] = 'application/json';
+        const rawJson = document.getElementById('pgBody').value.trim();
+        if (rawJson) {
+          try {
+            // validate json syntax
+            JSON.parse(rawJson);
+            reqBody = rawJson;
+          } catch (e) {
+            alert('Format JSON pada Request Body tidak valid: ' + e.message);
+            btnSend.disabled = false;
+            btnSend.innerText = '🚀 Kirim';
+            return;
+          }
+        }
+      } else if (bodyType === 'multipart' && method === 'POST') {
+        const formData = new FormData();
+        formData.append('division_pref_1', document.getElementById('pgDiv1').value);
+        const div2 = document.getElementById('pgDiv2').value;
+        if (div2) formData.append('division_pref_2', div2);
+
+        const fileInput = document.getElementById('pgCvFile');
+        if (fileInput.files.length > 0) {
+          formData.append('cv_file', fileInput.files[0]);
+        } else {
+          // default simulated valid pdf blob
+          const pdfContent = "%PDF-1.4\n1 0 obj\n<< /Title (CV Mahasiswa UII) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
+          const blob = new Blob([pdfContent], { type: 'application/pdf' });
+          formData.append('cv_file', blob, 'cv_playground.pdf');
+        }
+
+        reqBody = formData;
+        // Do NOT set Content-Type header manually for FormData so browser sets boundary
+      }
+
+      const t0 = performance.now();
+      try {
+        const res = await fetch(`${baseUrl}${path}`, {
+          method: method,
+          headers: headers,
+          body: reqBody
+        });
+        const duration = Math.round(performance.now() - t0);
+        let data;
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await res.json();
+        } else {
+          data = { message: 'Non-JSON Response (' + contentType + ')', status: res.status };
+        }
+        
+        renderResponse(res, data, method, path, duration);
+
+        // Auto capture token if it was a login
+        if (path.includes('/auth/login') && data.data && data.data.token) {
+          const role = data.data.user?.roles?.[0]?.name || 'USER';
+          setToken(data.data.token, role);
+        }
+      } catch (err) {
+        renderResponse(null, { error: err.message }, method, path);
+      } finally {
+        btnSend.disabled = false;
+        btnSend.innerText = '🚀 Kirim';
+      }
+    }
+
+    function inArray(needle, haystack) {
+      return haystack.includes(needle);
+    }
+
+    // ==========================================
+    // PRESET SHORTCUT FUNCTIONS
+    // ==========================================
+    async function quickLogin(type) {
+      if (type === 'student') {
+        await loginUser('21523001@students.uii.ac.id', 'Password123!', 'STUDENT');
+      } else if (type === 'organizer') {
+        await loginUser('lemfti@uii.ac.id', 'Password123!', 'ORGANIZER');
+      } else if (type === 'admin') {
+        await loginUser('admin.dpm@uii.ac.id', 'Password123!', 'SUPERADMIN');
+      }
+    }
+
+    async function loginUser(email, password, roleHint = 'USER') {
+      const t0 = performance.now();
       try {
         const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({ email, password })
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
-        renderResponse(res, data, 'POST', '/api/v1/auth/login');
+        renderResponse(res, data, 'POST', '/api/v1/auth/login', duration);
         if (data.data && data.data.token) {
-          setToken(data.data.token);
+          const role = data.data.user?.roles?.[0]?.name || roleHint;
+          setToken(data.data.token, role);
         }
       } catch (err) {
         renderResponse(null, { error: err.message }, 'POST', '/api/v1/auth/login');
@@ -173,6 +1149,7 @@
     }
 
     async function fetchMe() {
+      const t0 = performance.now();
       try {
         const res = await fetch(`${baseUrl}/api/v1/auth/me`, {
           method: 'GET',
@@ -181,14 +1158,16 @@
             'Authorization': currentToken ? `Bearer ${currentToken}` : ''
           }
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
-        renderResponse(res, data, 'GET', '/api/v1/auth/me');
+        renderResponse(res, data, 'GET', '/api/v1/auth/me', duration);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'GET', '/api/v1/auth/me');
       }
     }
 
     async function logoutUser() {
+      const t0 = performance.now();
       try {
         const res = await fetch(`${baseUrl}/api/v1/auth/logout`, {
           method: 'POST',
@@ -197,8 +1176,9 @@
             'Authorization': currentToken ? `Bearer ${currentToken}` : ''
           }
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
-        renderResponse(res, data, 'POST', '/api/v1/auth/logout');
+        renderResponse(res, data, 'POST', '/api/v1/auth/logout', duration);
         clearToken();
       } catch (err) {
         renderResponse(null, { error: err.message }, 'POST', '/api/v1/auth/logout');
@@ -206,6 +1186,7 @@
     }
 
     async function testRoute(path) {
+      const t0 = performance.now();
       try {
         const res = await fetch(`${baseUrl}${path}`, {
           method: 'GET',
@@ -214,14 +1195,16 @@
             'Authorization': currentToken ? `Bearer ${currentToken}` : ''
           }
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
-        renderResponse(res, data, 'GET', path);
+        renderResponse(res, data, 'GET', path, duration);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'GET', path);
       }
     }
 
     async function createSampleDraft() {
+      const t0 = performance.now();
       try {
         const res = await fetch(`${baseUrl}/api/v1/organizer/events`, {
           method: 'POST',
@@ -243,8 +1226,9 @@
             auto_post_ig: true
           })
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
-        renderResponse(res, data, 'POST', '/api/v1/organizer/events');
+        renderResponse(res, data, 'POST', '/api/v1/organizer/events', duration);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'POST', '/api/v1/organizer/events');
       }
@@ -253,8 +1237,8 @@
     let lastCreatedTicketCode = '';
 
     async function registerForEvent() {
+      const t0 = performance.now();
       try {
-        // Fetch published events first to get an ID
         const evListRes = await fetch(`${baseUrl}/api/v1/events`);
         const evListData = await evListRes.json();
         const firstEvent = evListData.data && evListData.data.length > 0 ? evListData.data[0] : null;
@@ -278,21 +1262,22 @@
             }
           })
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
         if (data.data && data.data.ticket_code) {
           lastCreatedTicketCode = data.data.ticket_code;
         }
-        renderResponse(res, data, 'POST', `/api/v1/events/${firstEvent.id}/register`);
+        renderResponse(res, data, 'POST', `/api/v1/events/${firstEvent.id}/register`, duration);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'POST', '/api/v1/events/{id}/register');
       }
     }
 
     async function cancelLatestTicket() {
+      const t0 = performance.now();
       try {
         let code = lastCreatedTicketCode;
         if (!code) {
-          // Fetch my tickets to get first active ticket
           const myTicks = await fetch(`${baseUrl}/api/v1/my-tickets`, {
             headers: {
               'Accept': 'application/json',
@@ -317,10 +1302,74 @@
             'Authorization': currentToken ? `Bearer ${currentToken}` : ''
           }
         });
+        const duration = Math.round(performance.now() - t0);
         const data = await res.json();
-        renderResponse(res, data, 'POST', `/api/v1/my-tickets/${code}/cancel`);
+        renderResponse(res, data, 'POST', `/api/v1/my-tickets/${code}/cancel`, duration);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'POST', '/api/v1/my-tickets/{code}/cancel');
+      }
+    }
+
+    async function applyForOprec() {
+      const t0 = performance.now();
+      try {
+        const evListRes = await fetch(`${baseUrl}/api/v1/events?type=COMMITTEE_RECRUITMENT`);
+        const evListData = await evListRes.json();
+        const oprecEvent = evListData.data && evListData.data.length > 0 ? evListData.data[0] : null;
+
+        if (!oprecEvent) {
+          alert('Tidak ada kegiatan tipe COMMITTEE_RECRUITMENT yang aktif.');
+          return;
+        }
+
+        const pdfContent = "%PDF-1.4\n1 0 obj\n<< /Title (CV Mahasiswa UII) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF";
+        const blob = new Blob([pdfContent], { type: 'application/pdf' });
+        const formData = new FormData();
+        formData.append('division_pref_1', 'Divisi Acara & Konsep');
+        formData.append('division_pref_2', 'Divisi Media Kreatif');
+        formData.append('cv_file', blob, 'cv_mahasiswa.pdf');
+        formData.append('custom_answers[motivation]', 'Tertarik mendalami event management di UII.');
+
+        const res = await fetch(`${baseUrl}/api/v1/events/${oprecEvent.id}/apply`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          },
+          body: formData
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        renderResponse(res, data, 'POST', `/api/v1/events/${oprecEvent.id}/apply`, duration);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/events/{id}/apply');
+      }
+    }
+
+    async function getOprecApplicants() {
+      const t0 = performance.now();
+      try {
+        const evListRes = await fetch(`${baseUrl}/api/v1/events?type=COMMITTEE_RECRUITMENT`);
+        const evListData = await evListRes.json();
+        const oprecEvent = evListData.data && evListData.data.length > 0 ? evListData.data[0] : null;
+
+        if (!oprecEvent) {
+          alert('Tidak ada kegiatan tipe COMMITTEE_RECRUITMENT yang aktif.');
+          return;
+        }
+
+        const path = `/api/v1/organizer/events/${oprecEvent.id}/applicants`;
+        const res = await fetch(`${baseUrl}${path}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          }
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        renderResponse(res, data, 'GET', path, duration);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'GET', '/api/v1/organizer/events/{id}/applicants');
       }
     }
   </script>

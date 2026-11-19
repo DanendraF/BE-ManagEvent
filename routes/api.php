@@ -41,6 +41,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/events/{id}/submit', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'submit']);
         Route::delete('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'destroy']);
         Route::get('/events/{id}/registrations', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'eventRegistrations']);
+        Route::get('/events/{id}/applicants', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'eventApplicants']);
+        Route::patch('/registrations/{id}/selection', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'updateSelection']);
     });
 
     // ==========================================
@@ -52,6 +54,16 @@ Route::prefix('v1')->group(function () {
         Route::get('/my-tickets', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'myTickets']);
         Route::get('/my-tickets/{ticket_code}', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'showTicket']);
         Route::post('/my-tickets/{ticket_code}/cancel', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'cancelTicket']);
+
+        // Jalur Pendaftaran Oprec Panitia Mahasiswa
+        Route::post('/events/{id}/apply', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'apply'])
+            ->middleware('throttle:registrations');
+        Route::get('/my-applications', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'myApplications']);
+    });
+
+    // Akses Dokumen CV Pendaftar (Mahasiswa pelamar, Panitia pemilik event, atau Superadmin)
+    Route::middleware(['auth:sanctum'])->group(function () {
+        Route::get('/registrations/{id}/cv', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'downloadCv']);
     });
 
     // ==========================================

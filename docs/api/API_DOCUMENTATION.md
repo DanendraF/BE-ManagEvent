@@ -690,3 +690,174 @@ Panitia penyelenggara dapat mengunduh atau memeriksa daftar lengkap peserta yang
   }
 }
 ```
+
+---
+
+## 7. Jalur Oprec Panitia (Committee Recruitment) & Dashboard Seleksi (Fitur 06)
+
+### 7.1 Pendaftaran Open Recruitment Panitia
+Mendaftarkan mahasiswa ke dalam kegiatan jalur kepanitiaan (`activity_type = 'COMMITTEE_RECRUITMENT'`). Wajib mengunggah berkas CV format PDF asli (tervalidasi header magic bytes `%PDF` untuk mencegah *file spoofing* atau unggahan skrip berbahaya).
+- **URL:** `POST /api/v1/events/{id}/apply`
+- **Akses:** Mahasiswa Terautentikasi (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: multipart/form-data`
+
+**Request Body (Multipart Form):**
+- `division_pref_1` (string, required) — Nama divisi pilihan utama (harus terdaftar pada divisi kegiatan).
+- `division_pref_2` (string, optional) — Nama divisi pilihan kedua (harus berbeda dari pilihan utama).
+- `cv_file` (file binary, required) — Berkas CV format PDF asli (maksimal 5MB, header `%PDF`).
+- `custom_answers[motivation]` (string, optional) — Alasan/motivasi mendaftar.
+- `custom_answers[portfolio_url]` (string, optional) — Tautan portofolio GitHub/LinkedIn.
+
+**Response Sukses (HTTP 201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Pendaftaran open recruitment panitia berhasil dikirim.",
+  "data": {
+    "id": "registration-uuid",
+    "registration_type": "COMMITTEE",
+    "division_pref_1": "Divisi Acara & Konsep",
+    "division_pref_2": "Divisi Media Kreatif",
+    "has_cv": true,
+    "cv_file_url": "recruitment_docs/event-uuid/unique-file-id.pdf",
+    "selection_status": "SUBMITTED",
+    "status": "REGISTERED",
+    "registered_at": "2026-11-19T06:33:14Z",
+    "custom_answers": {
+      "motivation": "Ingin mengembangkan soft skill kepemimpinan.",
+      "portfolio_url": "https://linkedin.com/in/fauzan-student"
+    },
+    "user": {
+      "id": "user-uuid",
+      "name": "Ahmad Fauzan",
+      "nim": "21523001",
+      "email": "21523001@students.uii.ac.id"
+    }
+  }
+}
+```
+
+---
+
+### 7.2 Riwayat Lamaran Kepanitiaan Mahasiswa
+Mengambil seluruh pendaftaran kepanitiaan yang diajukan oleh mahasiswa yang sedang login beserta status seleksi terkini.
+- **URL:** `GET /api/v1/my-applications?page=1&limit=15`
+- **Akses:** Mahasiswa Terautentikasi (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Daftar riwayat pendaftaran open recruitment berhasil dimuat.",
+  "data": [
+    {
+      "id": "registration-uuid",
+      "registration_type": "COMMITTEE",
+      "division_pref_1": "Divisi Acara & Konsep",
+      "division_pref_2": "Divisi Media Kreatif",
+      "selection_status": "INTERVIEW_SCHEDULED",
+      "registered_at": "2026-11-19T06:33:14Z",
+      "custom_answers": {
+        "selection_notes": "Wawancara dijadwalkan hari Sabtu, 28 Nov via Zoom."
+      },
+      "event": {
+        "id": "event-uuid",
+        "title": "Open Recruitment Panitia Ospek Kampus & Welcoming Day 2026",
+        "slug": "oprec-panitia-ospek-2026",
+        "activity_type": "COMMITTEE_RECRUITMENT",
+        "status": "PUBLISHED"
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "last_page": 1
+  }
+}
+```
+
+---
+
+### 7.3 Dashboard Calon Anggota Panitia (Akses Panitia Penyelenggara)
+Panitia pemilik acara dapat meninjau, menyaring, dan mencari pelamar oprec berdasarkan divisi dan status seleksi. Dilindungi IDOR.
+- **URL:** `GET /api/v1/organizer/events/{id}/applicants?division=Divisi Acara & Konsep&status=SUBMITTED&search=Fauzan`
+- **Akses:** Panitia Penyelenggara Acara (`ORGANIZER`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Daftar calon panitia (pendaftar oprec) berhasil dimuat.",
+  "data": [
+    {
+      "id": "registration-uuid",
+      "registration_type": "COMMITTEE",
+      "division_pref_1": "Divisi Acara & Konsep",
+      "division_pref_2": "Divisi Media Kreatif",
+      "has_cv": true,
+      "selection_status": "SUBMITTED",
+      "user": {
+        "id": "user-uuid",
+        "name": "Ahmad Fauzan",
+        "nim": "21523001",
+        "faculty": "Fakultas Teknologi Industri"
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "last_page": 1
+  }
+}
+```
+
+---
+
+### 7.4 Unduh Dokumen CV Pelamar Secara Aman
+Mengalirkan (*streaming*) file PDF CV pelamar. Hanya dapat diakses oleh mahasiswa pelamar itu sendiri atau panitia pemilik kegiatan (terproteksi IDOR).
+- **URL:** `GET /api/v1/registrations/{id}/cv`
+- **Akses:** Mahasiswa Pemilik Berkas (`STUDENT`) atau Panitia Pemilik Acara (`ORGANIZER`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+- `Content-Type: application/pdf`
+- `Content-Disposition: inline; filename="CV_{user_id}.pdf"`
+- Payload berkas biner PDF.
+
+---
+
+### 7.5 Pembaruan Status Seleksi Pelamar (Panitia Penyelenggara)
+Panitia dapat memproses tahapan seleksi calon anggota panitia dari tahap pendaftaran hingga diterima.
+- **URL:** `PATCH /api/v1/organizer/registrations/{id}/selection`
+- **Akses:** Panitia Penyelenggara Acara (`ORGANIZER`)
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "selection_status": "INTERVIEW_SCHEDULED",
+  "notes": "Wawancara dijadwalkan hari Sabtu, 28 Nov via Zoom. Link meeting telah dikirim."
+}
+```
+*(Nilai valid untuk `selection_status`: `SUBMITTED`, `INTERVIEW_SCHEDULED`, `ACCEPTED`, `REJECTED`)*
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Status seleksi pendaftar berhasil diperbarui menjadi INTERVIEW_SCHEDULED.",
+  "data": {
+    "id": "registration-uuid",
+    "selection_status": "INTERVIEW_SCHEDULED",
+    "custom_answers": {
+      "selection_notes": "Wawancara dijadwalkan hari Sabtu, 28 Nov via Zoom. Link meeting telah dikirim."
+    }
+  }
+}
+```

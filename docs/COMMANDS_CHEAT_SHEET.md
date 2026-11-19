@@ -57,6 +57,7 @@ php artisan test
 | **Katalog Acara Publik** | `php artisan test --filter EventCatalogTest` | Master kategori, katalog acara publik, filter pencarian judul/deskripsi, filter kategori/type, detail acara, dan proteksi draft |
 | **Manajemen Acara & Kurasi** | `php artisan test --filter EventLifecycleTest` | Pembuatan draf acara panitia, proteksi IDOR kepemilikan acara, submit ke DPM, review approval DPM, dan rejection loop |
 | **Pendaftaran & E-Tiket** | `php artisan test --filter RegistrationTest` | Concurrency lock kuota, database partial unique index anti-double entry, dan penerbitan tiket QR HMAC-SHA256 |
+| **Oprec Panitia & Seleksi** | `php artisan test --filter RecruitmentTest` | Validasi magic bytes PDF CV, pemilihan divisi valid, proteksi anti-double entry, dashboard pelamar panitia, dan update seleksi |
 | **Presensi & Sertifikat** | `php artisan test --filter AttendanceTest` | Scan presensi hari-H dengan `hash_equals()`, anti-double check-in, dan e-sertifikat otomatis |
 
 ### Opsi Tambahan yang Sangat Berguna Saat Debugging:
@@ -78,7 +79,7 @@ Selain PHPUnit, sistem ini dilengkapi tool siap pakai tanpa instalasi tambahan:
 ```bash
 php artisan api:test
 ```
-*Fungsi:* Command internal yang menjalankan **20 skenario HTTP internal end-to-end**:
+*Fungsi:* Command internal yang menjalankan **24 skenario HTTP internal end-to-end**:
 1. Login akun Panitia LEM FTI
 2. Validasi login password salah (422)
 3. Blokir request tanpa token (401)
@@ -99,6 +100,10 @@ php artisan api:test
 18. Pengecekan detail tiket & payload verifikasi QR (200)
 19. Pembatalan tiket mahasiswa & pengembalian kuota (+1) (200)
 20. Akses daftar peserta acara oleh panitia penyelenggara (200)
+21. Pendaftaran open recruitment panitia dengan validasi magic bytes PDF CV (201)
+22. Pemuatan riwayat pendaftaran kepanitiaan mahasiswa (200)
+23. Dashboard daftar calon panitia (oprec applicants) bagi panitia penyelenggara (200)
+24. Pembaruan status seleksi pendaftar (INTERVIEW_SCHEDULED) dan catatan wawancara (200)
 
 ### B. Interactive Web UI Tester (Browser)
 1. Jalankan `php artisan serve`
