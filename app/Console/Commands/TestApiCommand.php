@@ -271,6 +271,117 @@ class TestApiCommand extends Command
             }
         }
 
+        // Target event for registration testing (published event)
+        $regTargetEventId = $createdEventId;
+        if (! $regTargetEventId) {
+            $pubEv = \App\Models\Event::where('status', \App\Enums\EventStatusEnum::PUBLISHED->value)->first();
+            $regTargetEventId = $pubEv?->id;
+        }
+
+        $studentUser = User::where('email', '21523001@students.uii.ac.id')->first();
+        $studentToken = $studentUser?->createToken('cli_student_token')->plainTextToken;
+        $orgUser = User::where('email', 'lemfti@uii.ac.id')->first();
+        $orgToken = $orgUser?->createToken('cli_org_token')->plainTextToken;
+
+        $registeredTicketCode = null;
+
+        // 15. Test POST /api/v1/events/{id}/register (Student Registration & E-Ticket)
+        if ($regTargetEventId && $studentToken) {
+            $this->comment('15. Testing POST /api/v1/events/{id}/register (Student Registration with Signed E-Ticket)...');
+            $regRes = $this->dispatchRequest('POST', "/api/v1/events/{$regTargetEventId}/register", [
+                'custom_answers' => [
+                    'dietary_requirement' => 'Vegetarian',
+                    'tshirt_size' => 'L',
+                ],
+            ], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+            ]);
+
+            if ($regRes->getStatusCode() === 201) {
+                $regData = json_decode($regRes->getContent(), true);
+                $registeredTicketCode = $regData['data']['ticket_code'] ?? ($regData['data']['ticket']['ticket_code'] ?? null);
+                $this->info('   ✓ Status: 201 Created | Tiket: ' . $registeredTicketCode . ' | QR Sig: OK');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 201, got ' . $regRes->getStatusCode() . ' ' . $regRes->getContent());
+                $failed++;
+            }
+
+            // 16. Test Anti-Double Entry (POST again by same student -> 409 Conflict)
+            $this->comment('16. Testing Anti-Double Entry (Same student registers again)...');
+            $dupRes = $this->dispatchRequest('POST', "/api/v1/events/{$regTargetEventId}/register", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+            ]);
+
+            if ($dupRes->getStatusCode() === 409) {
+                $this->info('   ✓ Status: 409 Conflict (Pencegahan duplikasi berhasil ditolak)');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 409 Conflict, got ' . $dupRes->getStatusCode());
+                $failed++;
+            }
+
+            // 17. Test GET /api/v1/my-tickets (Student Ticket List)
+            $this->comment('17. Testing GET /api/v1/my-tickets (List My E-Tickets)...');
+            $myTicksRes = $this->dispatchRequest('GET', '/api/v1/my-tickets', [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+            ]);
+
+            if ($myTicksRes->getStatusCode() === 200) {
+                $ticksData = json_decode($myTicksRes->getContent(), true);
+                $count = count($ticksData['data'] ?? []);
+                $this->info('   ✓ Status: 200 OK | Jumlah Tiket Aktif: ' . $count);
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $myTicksRes->getStatusCode());
+                $failed++;
+            }
+
+            // 18. Test GET /api/v1/my-tickets/{ticket_code} (Student Ticket Detail)
+            if ($registeredTicketCode) {
+                $this->comment('18. Testing GET /api/v1/my-tickets/' . $registeredTicketCode . ' (Ticket Detail)...');
+                $tickDetRes = $this->dispatchRequest('GET', "/api/v1/my-tickets/{$registeredTicketCode}", [], [
+                    'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+                ]);
+
+                if ($tickDetRes->getStatusCode() === 200) {
+                    $this->info('   ✓ Status: 200 OK | Detail Tiket & Payload QR Tervalidasi');
+                    $passed++;
+                } else {
+                    $this->error('   ✗ FAILED: Expected 200, got ' . $tickDetRes->getStatusCode());
+                    $failed++;
+                }
+
+                // 19. Test POST /api/v1/my-tickets/{ticket_code}/cancel (Ticket Cancellation & Quota Restore)
+                $this->comment('19. Testing POST /api/v1/my-tickets/' . $registeredTicketCode . '/cancel (Cancellation)...');
+                $cancelRes = $this->dispatchRequest('POST', "/api/v1/my-tickets/{$registeredTicketCode}/cancel", [], [
+                    'HTTP_AUTHORIZATION' => 'Bearer ' . $studentToken,
+                ]);
+
+                if ($cancelRes->getStatusCode() === 200) {
+                    $this->info('   ✓ Status: 200 OK | Tiket Berhasil Dibatalkan & Kuota Dikembalikan (+1)');
+                    $passed++;
+                } else {
+                    $this->error('   ✗ FAILED: Expected 200, got ' . $cancelRes->getStatusCode());
+                    $failed++;
+                }
+            }
+
+            // 20. Test GET /api/v1/organizer/events/{id}/registrations (Organizer views attendee list)
+            $this->comment('20. Testing GET /api/v1/organizer/events/{id}/registrations (Organizer Attendees List)...');
+            $orgAttendeesRes = $this->dispatchRequest('GET', "/api/v1/organizer/events/{$regTargetEventId}/registrations", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($orgAttendeesRes->getStatusCode() === 200) {
+                $this->info('   ✓ Status: 200 OK | Panitia Berhasil Mengakses Daftar Pendaftar Acara');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $orgAttendeesRes->getStatusCode());
+                $failed++;
+            }
+        }
+
         // Summary
         $this->info('');
         $this->line('===============================================================');

@@ -94,6 +94,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 409);
                 }
 
+                // 5b. Conflict HTTP Exception (e.g. Duplicate Registration application level)
+                if ($e instanceof \Symfony\Component\HttpKernel\Exception\ConflictHttpException) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error_code' => 'ERR_ALREADY_REGISTERED',
+                        'message' => $e->getMessage() ?: 'Konflik: Anda sudah terdaftar pada kegiatan ini.',
+                        'errors' => [],
+                    ], 409);
+                }
+
                 // 6. Rate Limiting / Throttle
                 if ($e instanceof ThrottleRequestsException) {
                     return response()->json([

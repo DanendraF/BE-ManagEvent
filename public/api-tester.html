@@ -85,6 +85,15 @@
           <button class="contrast" onclick="testRoute('/api/v1/admin/events')">GET /admin/events (Daftar Pengajuan DPM)</button>
         </div>
       </div>
+
+      <div class="card">
+        <h4>6. Pendaftaran Peserta & E-Tiket QR (Fitur 05)</h4>
+        <div class="grid-btns">
+          <button onclick="registerForEvent()">POST /events/{id}/register (Daftar Acara Aktif)</button>
+          <button onclick="testRoute('/api/v1/my-tickets')">GET /my-tickets (Tiket Saya)</button>
+          <button class="contrast" onclick="cancelLatestTicket()">POST /my-tickets/{code}/cancel (Batal Tiket)</button>
+        </div>
+      </div>
     </div>
 
     <div>
@@ -238,6 +247,80 @@
         renderResponse(res, data, 'POST', '/api/v1/organizer/events');
       } catch (err) {
         renderResponse(null, { error: err.message }, 'POST', '/api/v1/organizer/events');
+      }
+    }
+
+    let lastCreatedTicketCode = '';
+
+    async function registerForEvent() {
+      try {
+        // Fetch published events first to get an ID
+        const evListRes = await fetch(`${baseUrl}/api/v1/events`);
+        const evListData = await evListRes.json();
+        const firstEvent = evListData.data && evListData.data.length > 0 ? evListData.data[0] : null;
+
+        if (!firstEvent) {
+          alert('Belum ada event berstatus PUBLISHED di database. Jalankan seeder atau buat event via panitia & DPM!');
+          return;
+        }
+
+        const res = await fetch(`${baseUrl}/api/v1/events/${firstEvent.id}/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          },
+          body: JSON.stringify({
+            custom_answers: {
+              info_source: 'Instagram BSI UII',
+              dietary: 'Normal'
+            }
+          })
+        });
+        const data = await res.json();
+        if (data.data && data.data.ticket_code) {
+          lastCreatedTicketCode = data.data.ticket_code;
+        }
+        renderResponse(res, data, 'POST', `/api/v1/events/${firstEvent.id}/register`);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/events/{id}/register');
+      }
+    }
+
+    async function cancelLatestTicket() {
+      try {
+        let code = lastCreatedTicketCode;
+        if (!code) {
+          // Fetch my tickets to get first active ticket
+          const myTicks = await fetch(`${baseUrl}/api/v1/my-tickets`, {
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+            }
+          });
+          const ticksData = await myTicks.json();
+          if (ticksData.data && ticksData.data.length > 0) {
+            code = ticksData.data[0].ticket_code;
+          }
+        }
+
+        if (!code) {
+          alert('Tidak ada tiket aktif yang dapat dibatalkan.');
+          return;
+        }
+
+        const res = await fetch(`${baseUrl}/api/v1/my-tickets/${code}/cancel`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          }
+        });
+        const data = await res.json();
+        renderResponse(res, data, 'POST', `/api/v1/my-tickets/${code}/cancel`);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/my-tickets/{code}/cancel');
       }
     }
   </script>

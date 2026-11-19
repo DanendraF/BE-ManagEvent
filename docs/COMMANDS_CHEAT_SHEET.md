@@ -78,7 +78,7 @@ Selain PHPUnit, sistem ini dilengkapi tool siap pakai tanpa instalasi tambahan:
 ```bash
 php artisan api:test
 ```
-*Fungsi:* Command internal yang menjalankan 14+ skenario HTTP internal end-to-end:
+*Fungsi:* Command internal yang menjalankan **20 skenario HTTP internal end-to-end**:
 1. Login akun Panitia LEM FTI
 2. Validasi login password salah (422)
 3. Blokir request tanpa token (401)
@@ -93,6 +93,12 @@ php artisan api:test
 12. Pembuatan draf baru oleh panitia (201)
 13. Pengajuan draf ke DPM (200)
 14. Persetujuan resmi (approval) oleh Superadmin DPM (200)
+15. Pendaftaran peserta dengan E-Tiket ber-QR signature HMAC (201)
+16. Validasi anti-double entry pencegahan duplikasi (409)
+17. Pengambilan daftar tiket aktif mahasiswa (200)
+18. Pengecekan detail tiket & payload verifikasi QR (200)
+19. Pembatalan tiket mahasiswa & pengembalian kuota (+1) (200)
+20. Akses daftar peserta acara oleh panitia penyelenggara (200)
 
 ### B. Interactive Web UI Tester (Browser)
 1. Jalankan `php artisan serve`

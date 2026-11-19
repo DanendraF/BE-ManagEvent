@@ -40,10 +40,22 @@ Route::prefix('v1')->group(function () {
         Route::put('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'update']);
         Route::post('/events/{id}/submit', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'submit']);
         Route::delete('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'destroy']);
+        Route::get('/events/{id}/registrations', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'eventRegistrations']);
     });
 
     // ==========================================
-    // 4. Modul Super Admin Kurasi (DPM UII)
+    // 4. Modul Pendaftaran Peserta & E-Tiket Mahasiswa
+    // ==========================================
+    Route::middleware(['auth:sanctum', 'role:STUDENT'])->group(function () {
+        Route::post('/events/{id}/register', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'register'])
+            ->middleware('throttle:registrations');
+        Route::get('/my-tickets', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'myTickets']);
+        Route::get('/my-tickets/{ticket_code}', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'showTicket']);
+        Route::post('/my-tickets/{ticket_code}/cancel', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'cancelTicket']);
+    });
+
+    // ==========================================
+    // 5. Modul Super Admin Kurasi (DPM UII)
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:SUPERADMIN'])->prefix('admin')->group(function () {
         Route::get('/events', [\App\Http\Controllers\Api\V1\AdminEventController::class, 'index']);

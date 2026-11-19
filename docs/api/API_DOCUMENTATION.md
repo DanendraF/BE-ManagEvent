@@ -505,3 +505,188 @@
 }
 ```
 *(Catatan: Panitia dapat merevisi dan mengajukan kembali kegiatan yang berstatus `REJECTED`).*
+
+---
+
+## 6. Transaksi Pendaftaran Peserta & E-Tiket QR (Fitur 05)
+
+### 6.1 Pendaftaran Peserta Kegiatan
+Mendaftarkan mahasiswa ke dalam kegiatan berstatus `PUBLISHED`. Menggunakan transaksi database dengan penguncian baris (`lockForUpdate`) untuk integritas kuota dan indeks unik parsial PostgreSQL untuk pencegahan double registration.
+- **URL:** `POST /api/v1/events/{id}/register`
+- **Akses:** Mahasiswa Terautentikasi (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+
+**Request Body (Opsional):**
+```json
+{
+  "custom_answers": {
+    "dietary_preference": "Vegetarian",
+    "tshirt_size": "XL",
+    "info_source": "Instagram BSI UII"
+  }
+}
+```
+
+**Response Sukses (HTTP 201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Pendaftaran kegiatan berhasil dikonfirmasi. E-Tiket ber-QR Code telah diterbitkan.",
+  "data": {
+    "id": "ticket-uuid",
+    "ticket_code": "TKT-2026-X9K2PL8M",
+    "qr_payload": "eyJ0aWNrZXRfY29kZSI6IlRLVC0yMDI2LVg5SzJQTDhNIiwicmVnX2lkIjoi...",
+    "is_checked_in": false,
+    "checked_in_at": null,
+    "event": {
+      "id": "event-uuid",
+      "title": "Seminar Nasional AI & Karir Teknologi 2026",
+      "slug": "seminar-nasional-ai-2026",
+      "start_time": "2026-12-10T08:00:00Z",
+      "end_time": "2026-12-10T12:00:00Z",
+      "location": "Auditorium FTI Kampus Terpadu UII"
+    },
+    "registration": {
+      "id": "registration-uuid",
+      "registration_type": "PARTICIPANT",
+      "status": "REGISTERED",
+      "registered_at": "2026-11-19T06:22:55Z",
+      "custom_answers": {
+        "dietary_preference": "Vegetarian"
+      }
+    }
+  },
+  "meta": {
+    "timestamp": "2026-11-19T06:22:55Z",
+    "version": "v1.0"
+  }
+}
+```
+
+**Response Error Double Entry (HTTP 409 Conflict):**
+```json
+{
+  "status": "error",
+  "error_code": "ERR_ALREADY_REGISTERED",
+  "message": "Anda sudah terdaftar pada kegiatan ini.",
+  "errors": []
+}
+```
+
+---
+
+### 6.2 Daftar E-Tiket Aktif Mahasiswa
+Mengambil seluruh tiket kegiatan aktif yang dimiliki oleh mahasiswa yang sedang login.
+- **URL:** `GET /api/v1/my-tickets?page=1&limit=15`
+- **Akses:** Mahasiswa Terautentikasi (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Daftar e-tiket aktif berhasil dimuat.",
+  "data": [
+    {
+      "id": "ticket-uuid",
+      "ticket_code": "TKT-2026-X9K2PL8M",
+      "qr_payload": "eyJ0aWNrZXRfY29kZSI6IlRLVC0yMDI2LVg5SzJQTDhNIiwicmVnX2lkIjoi...",
+      "is_checked_in": false,
+      "event": {
+        "id": "event-uuid",
+        "title": "Seminar Nasional AI & Karir Teknologi 2026"
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "last_page": 1,
+    "per_page": 15,
+    "total": 1
+  }
+}
+```
+
+---
+
+### 6.3 Detail E-Tiket & Verifikasi QR
+Mengambil spesifikasi tiket tunggal beserta tanda tangan kriptografi QR untuk ditampilkan pada aplikasi mobile atau dicetak.
+- **URL:** `GET /api/v1/my-tickets/{ticket_code}`
+- **Akses:** Mahasiswa Pemilik Tiket (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Detail e-tiket berhasil diverifikasi dan dimuat.",
+  "data": {
+    "id": "ticket-uuid",
+    "ticket_code": "TKT-2026-X9K2PL8M",
+    "qr_payload": "eyJ0aWNrZXRfY29kZSI6IlRLVC0yMDI2LVg5SzJQTDhNIiwicmVnX2lkIjoi...",
+    "is_checked_in": false,
+    "checked_in_at": null,
+    "event": { ... }
+  }
+}
+```
+
+---
+
+### 6.4 Pembatalan Pendaftaran & Pemulihan Kuota
+Membatalkan tiket kegiatan. Status pendaftaran diubah menjadi `CANCELLED`, e-tiket dinonaktifkan, dan sisa kuota kegiatan otomatis dipulihkan (+1). Mahasiswa diperkenankan mendaftar kembali di kemudian hari jika kuota masih tersedia.
+- **URL:** `POST /api/v1/my-tickets/{ticket_code}/cancel`
+- **Akses:** Mahasiswa Pemilik Tiket (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Pendaftaran kegiatan berhasil dibatalkan. Kuota tiket telah dikembalikan ke sistem.",
+  "data": {
+    "ticket_code": "TKT-2026-X9K2PL8M",
+    "status": "CANCELLED"
+  }
+}
+```
+
+---
+
+### 6.5 Daftar Peserta Terdaftar (Akses Panitia)
+Panitia penyelenggara dapat mengunduh atau memeriksa daftar lengkap peserta yang terdaftar pada kegiatan miliknya. Dilindungi EventPolicy IDOR.
+- **URL:** `GET /api/v1/organizer/events/{id}/registrations?status=REGISTERED`
+- **Akses:** Panitia Penyelenggara Pemilik Acara (`ORGANIZER`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Daftar pendaftar kegiatan berhasil dimuat.",
+  "data": [
+    {
+      "id": "registration-uuid",
+      "registration_type": "PARTICIPANT",
+      "status": "REGISTERED",
+      "registered_at": "2026-11-19T06:22:55Z",
+      "user": {
+        "id": "user-uuid",
+        "name": "Ahmad Fauzan",
+        "nim": "21523001",
+        "email": "21523001@students.uii.ac.id",
+        "faculty": "Fakultas Teknologi Industri"
+      },
+      "ticket": {
+        "ticket_code": "TKT-2026-X9K2PL8M",
+        "is_checked_in": false
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 20,
+    "total": 1
+  }
+}
+```

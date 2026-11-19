@@ -17,7 +17,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('registration_id')->unique()->constrained('registrations')->cascadeOnDelete();
             $table->string('ticket_code', 50)->unique();
-            $table->string('qr_payload', 255)->unique();
+            $table->text('qr_payload');
             $table->boolean('is_checked_in')->default(false);
             $table->timestampTz('checked_in_at')->nullable();
             $table->foreignUuid('checked_in_by')->nullable()->constrained('users')->nullOnDelete();
