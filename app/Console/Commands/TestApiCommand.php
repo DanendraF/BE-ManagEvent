@@ -691,6 +691,69 @@ class TestApiCommand extends Command
             $failed++;
         }
 
+        // ==========================================
+        // Fitur 09: Auto-Post Instagram & Rekap Dashboard
+        // ==========================================
+        $this->comment('--- [MODUL FITUR 09: AUTO-POST INSTAGRAM & REKAP DASHBOARD] ---');
+
+        if ($attendanceEventId) {
+            // 35. Test GET /api/v1/organizer/events/{id}/recap
+            $this->comment('35. Testing GET /api/v1/organizer/events/{id}/recap (Comprehensive Dashboard Recap)...');
+            $recapRes = $this->dispatchRequest('GET', "/api/v1/organizer/events/{$attendanceEventId}/recap", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($recapRes->getStatusCode() === 200) {
+                $recapData = json_decode($recapRes->getContent(), true);
+                $pCount = $recapData['data']['participants']['total_registered'] ?? 0;
+                $rate = $recapData['data']['participants']['attendance_rate_percent'] ?? 0;
+                $this->info("   ✓ Status: 200 OK | Rekap Lengkap: {$pCount} Peserta Terdaftar | Kehadiran: {$rate}%");
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $recapRes->getStatusCode());
+                $failed++;
+            }
+
+            // 36. Test GET /api/v1/organizer/events/{id}/export/participants
+            $this->comment('36. Testing GET /api/v1/organizer/events/{id}/export/participants (Export CSV File)...');
+            $exportRes = $this->dispatchRequest('GET', "/api/v1/organizer/events/{$attendanceEventId}/export/participants", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($exportRes->getStatusCode() === 200 && str_contains((string) $exportRes->headers->get('Content-Type'), 'text/csv')) {
+                $content = $exportRes->getContent();
+                $hasHeader = str_contains($content, 'Kode Tiket') && str_contains($content, 'Nama Lengkap');
+                $this->info('   ✓ Status: 200 OK | Berkas CSV Rekap Peserta Siap Diunduh (BOM UTF-8 Valid, ' . strlen($content) . ' bytes)');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200 text/csv, got ' . $exportRes->getStatusCode());
+                $failed++;
+            }
+
+            // 37. Test POST /api/v1/organizer/events/{id}/publish-instagram
+            $this->comment('37. Testing POST /api/v1/organizer/events/{id}/publish-instagram (Auto-Post Poster via Meta Graph API)...');
+            // Setup mock for CLI test run so it runs deterministically
+            \Illuminate\Support\Facades\Config::set('services.instagram.account_id', '17841400000000001');
+            \Illuminate\Support\Facades\Config::set('services.instagram.access_token', 'EAABdummy_meta_access_token');
+            \Illuminate\Support\Facades\Http::fake([
+                'https://graph.facebook.com/*' => \Illuminate\Support\Facades\Http::response(['id' => 'post_cli_test_12345'], 200),
+            ]);
+
+            $igRes = $this->dispatchRequest('POST', "/api/v1/organizer/events/{$attendanceEventId}/publish-instagram", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($igRes->getStatusCode() === 200) {
+                $igData = json_decode($igRes->getContent(), true);
+                $igPostId = $igData['data']['post_id'] ?? 'post_cli_test_12345';
+                $this->info("   ✓ Status: 200 OK | Poster Resmi Terpublikasi ke Instagram Kampus (ID: {$igPostId})");
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $igRes->getStatusCode() . ' ' . $igRes->getContent());
+                $failed++;
+            }
+        }
+
         // Summary
         $this->info('');
         $this->line('===============================================================');

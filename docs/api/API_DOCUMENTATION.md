@@ -1151,3 +1151,122 @@ Memungkinkan panitia penyelenggara menjadwalkan pengiriman pengingat acara ke se
   }
 }
 ```
+
+---
+
+## 10. Integrasi Auto-Post Instagram (Meta Graph API) & Rekap Dashboard
+
+Modul ini melengkapi siklus hidup acara dengan otomatisasi publikasi media sosial dan pelaporan menyeluruh:
+1. **Auto-Post Instagram (Meta Graph API 2-Step Publishing):**
+   - Saat kegiatan resmi disetujui (APPROVED) oleh Super Admin (DPM), sistem secara otomatis memasukkan job `PostToInstagramJob` ke dalam antrean background melalui `DB::afterCommit(...)`.
+   - Menggunakan alur resmi 2 tahap Meta Graph API:
+     - Tahap 1: Pembuatan kontainer media (`POST /{ig-account-id}/media`) dengan `image_url` poster dan takarir (*caption*) terformat lengkap.
+     - Tahap 2: Publikasi kontainer ke *feed* Instagram (`POST /{ig-account-id}/media_publish`).
+   - Terdapat proteksi **Idempotency** di tabel `notification_logs` sehingga tidak terjadi duplikasi unggahan postingan.
+2. **Rekapitulasi Komprehensif Dashboard:**
+   - Menyajikan metrik multi-dimensi dalam 1 kali panggilan API: metrik peserta (total, hadir, persen kehadiran), metrik oprec (pelamar, status seleksi), metrik e-sertifikat, dan status pengiriman notifikasi/Instagram.
+3. **Ekspor Laporan CSV Ber-BOM UTF-8:**
+   - Berkas CSV dihasilkan langsung dalam memori stream (`php://temp`) lengkap dengan byte header UTF-8 BOM (`\xEF\xBB\xBF`) agar karakter bahasa Indonesia dan aksen langsung rapi saat dibuka di Microsoft Excel.
+
+---
+
+### 10.1 Rekapitulasi Lengkap Dashboard Panitia
+Mengambil ringkasan metrik statistik acara untuk panitia penyelenggara dan Super Admin.
+- **URL:** `GET /api/v1/organizer/events/{id}/recap`
+- **Akses:** Panitia Penyelenggara Kegiatan atau Super Admin (`ORGANIZER`, `SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Rekapitulasi lengkap kegiatan kampus berhasil dimuat.",
+  "data": {
+    "event": {
+      "id": "event-uuid",
+      "title": "Seminar Nasional AI & Karir Teknologi 2026",
+      "slug": "seminar-nasional-ai-2026",
+      "status": "PUBLISHED",
+      "category": "Seminar",
+      "organizer": "Sarah Nabila (LEM FTI UII)",
+      "start_time": "2026-12-10T08:00:00+00:00",
+      "end_time": "2026-12-10T12:00:00+00:00",
+      "location": "Auditorium FTI UII",
+      "quota_total": 250,
+      "quota_remaining": 42
+    },
+    "participants": {
+      "total_registered": 208,
+      "attended_count": 185,
+      "not_attended_count": 23,
+      "attendance_rate_percent": 88.9,
+      "cancelled_count": 6
+    },
+    "recruitment": null,
+    "certificates": {
+      "total_issued": 185
+    },
+    "notifications": {
+      "total_logs": 220,
+      "whatsapp_sent": 190,
+      "whatsapp_failed": 18,
+      "email_sent": 208,
+      "email_failed": 0,
+      "instagram_sent": 1,
+      "instagram_failed": 0
+    }
+  },
+  "meta": {
+    "timestamp": "2026-11-19T07:36:18Z",
+    "version": "v1.0"
+  }
+}
+```
+
+---
+
+### 10.2 Ekspor Rekap Peserta & Kehadiran (CSV)
+Mengunduh berkas tabular CSV berisi data seluruh peserta terdaftar, status presensi hari-H, waktu check-in, dan nomor e-sertifikat resmi.
+- **URL:** `GET /api/v1/organizer/events/{id}/export/participants`
+- **Akses:** Panitia Penyelenggara Kegiatan atau Super Admin (`ORGANIZER`, `SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+- **Response Header:**
+  - `Content-Type: text/csv; charset=UTF-8`
+  - `Content-Disposition: attachment; filename="rekap-peserta-{slug}.csv"`
+
+---
+
+### 10.3 Ekspor Rekap Pelamar Oprec Panitia (CSV)
+Mengunduh berkas CSV daftar pelamar panitia (*committee recruitment*), divisi pilihan utama & cadangan, catatan seleksi, dan status kelulusan.
+- **URL:** `GET /api/v1/organizer/events/{id}/export/applicants`
+- **Akses:** Panitia Penyelenggara Kegiatan atau Super Admin (`ORGANIZER`, `SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+- **Response Header:**
+  - `Content-Type: text/csv; charset=UTF-8`
+  - `Content-Disposition: attachment; filename="rekap-pelamar-{slug}.csv"`
+
+---
+
+### 10.4 Auto-Post Poster ke Instagram Resmi Kampus
+Memicu pengiriman manual poster dan deskripsi acara resmi ke Instagram kampus melalui Meta Graph API.
+- **URL:** `POST /api/v1/organizer/events/{id}/publish-instagram`
+- **Akses:** Panitia Penyelenggara Kegiatan atau Super Admin (`ORGANIZER`, `SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Poster kegiatan berhasil dipublikasikan secara otomatis ke Instagram Resmi Kampus.",
+  "data": {
+    "status": "SENT",
+    "post_id": "17923482910384729"
+  },
+  "meta": {
+    "timestamp": "2026-11-19T07:36:18Z",
+    "version": "v1.0"
+  }
+}
+```
+
+```

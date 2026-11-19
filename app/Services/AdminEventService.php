@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\EventStatusEnum;
+use App\Jobs\PostToInstagramJob;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class AdminEventService
 {
@@ -32,12 +34,18 @@ class AdminEventService
      */
     public function approveEvent(User $admin, Event $event): Event
     {
-        $event->update([
-            'status' => EventStatusEnum::PUBLISHED,
-            'rejection_reason' => null,
-        ]);
+        return DB::transaction(function () use ($event) {
+            $event->update([
+                'status' => EventStatusEnum::PUBLISHED,
+                'rejection_reason' => null,
+            ]);
 
-        return $event->fresh(['organizer', 'category', 'divisions']);
+            DB::afterCommit(function () use ($event) {
+                PostToInstagramJob::dispatch($event->id);
+            });
+
+            return $event->fresh(['organizer', 'category', 'divisions']);
+        });
     }
 
     /**

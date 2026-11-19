@@ -19,7 +19,7 @@ Dokumen ini memantau status pengerjaan fitur secara bertahap (*feature-by-featur
 | **06** | **Jalur Oprec Panitia (Committee Recruitment)**<br>• Pendaftaran Oprec dengan Pilihan Divisi & Hardened CV/KRS Upload (PDF magic bytes)<br>• Dashboard Seleksi Panitia & Pengumuman Tahap | 🟢 *Selesai* | [`docs/commits/06_oprec_panitia_dan_seleksi.md`](docs/commits/06_oprec_panitia_dan_seleksi.md) | 19 Nov 2026 |
 | **07** | **Presensi QR Hari-H & Penerbitan E-Sertifikat Otomatis**<br>• Web Scanner Endpoint dengan `hash_equals()` timing-safe HMAC<br>• Pencegahan Double Check-in (`ERR_ALREADY_CHECKED_IN`)<br>• Otomasi Terbit E-Sertifikat & Verifikasi Publik `/verify/{hash}` | 🟢 *Selesai* | [`docs/commits/07_presensi_qr_dan_sertifikat.md`](docs/commits/07_presensi_qr_dan_sertifikat.md) | 19 Nov 2026 |
 | **08** | **Otomasi Notifikasi & Pengingat (WhatsApp & Email)**<br>• Fallback Resilient: WhatsApp Gateway $\rightarrow$ SMTP Email UII<br>• Background Queue Jobs dengan Exponential Backoff & Idempotency<br>• Scheduler Pengingat H-1 dan H-3 Jam | 🟢 *Selesai* | [`docs/commits/08_notifikasi_dan_pengingat.md`](docs/commits/08_notifikasi_dan_pengingat.md) | 19 Nov 2026 |
-| **09** | **Integrasi Auto-Post Instagram (Meta Graph API) & Rekap Dashboard**<br>• Auto-post poster acara approved ke Akun Instagram Kampus<br>• Ekspor Rekap Peserta & Statistik Kehadiran Panitia | 🟡 *In Progress* | `docs/commits/09_autopost_ig_dan_rekap.md` | - |
+| **09** | **Integrasi Auto-Post Instagram (Meta Graph API) & Rekap Dashboard**<br>• Auto-post poster acara approved ke Akun Instagram Kampus<br>• Ekspor Rekap Peserta & Statistik Kehadiran Panitia | 🟢 *Selesai* | [`docs/commits/09_autopost_ig_dan_rekap.md`](docs/commits/09_autopost_ig_dan_rekap.md) | 19 Nov 2026 |
 
 ---
 

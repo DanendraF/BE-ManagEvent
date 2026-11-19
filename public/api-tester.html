@@ -344,6 +344,7 @@
           <button class="tab-btn" onclick="switchTab('tab-recruitment')">👥 Oprec Panitia</button>
           <button class="tab-btn" onclick="switchTab('tab-attendance')">🎓 Presensi & Sertifikat</button>
           <button class="tab-btn" onclick="switchTab('tab-notifications')">🔔 Notifikasi & Pengingat</button>
+          <button class="tab-btn" onclick="switchTab('tab-reporting')">📊 Rekap & Instagram</button>
         </nav>
 
         <!-- TAB 0: INTERACTIVE PLAYGROUND (USER DAPAT MENGUBAH / TEST SENDIRI) -->
@@ -395,6 +396,12 @@
                 <optgroup label="7. Notifikasi & Pengingat (Fitur 08)">
                   <option value="event_notif_logs">GET /api/v1/organizer/events/{id}/notifications (Log Notifikasi)</option>
                   <option value="broadcast_reminders">POST /api/v1/organizer/events/{id}/reminders (Broadcast Pengingat)</option>
+                </optgroup>
+                <optgroup label="8. Rekap & Instagram (Fitur 09)">
+                  <option value="event_recap">GET /api/v1/organizer/events/{id}/recap (Rekapitulasi Lengkap)</option>
+                  <option value="export_participants">GET /api/v1/organizer/events/{id}/export/participants (Ekspor Peserta CSV)</option>
+                  <option value="export_applicants">GET /api/v1/organizer/events/{id}/export/applicants (Ekspor Pelamar CSV)</option>
+                  <option value="publish_instagram">POST /api/v1/organizer/events/{id}/publish-instagram (Post ke Instagram)</option>
                 </optgroup>
               </select>
             </div>
@@ -806,6 +813,60 @@
             </div>
           </div>
         </div>
+
+        <!-- TAB 8: REKAP DASHBOARD & INSTAGRAM (FITUR 09) -->
+        <div id="tab-reporting" class="tab-content">
+          <div class="action-group">
+            <h4>Rekapitulasi Lengkap Kegiatan</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Rekapitulasi Dashboard (Peserta, Presensi, Metrik)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events/{id}/recap</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadRecapPlayground()">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="getRecapSample()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>Ekspor Laporan Resmi (CSV / Excel)</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Ekspor Rekap Peserta & Kehadiran (CSV)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events/{id}/export/participants</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="exportParticipantsSample()">⚡ Unduh</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Ekspor Rekap Pelamar Oprec (CSV)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events/{id}/export/applicants</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="exportApplicantsSample()">⚡ Unduh</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>Auto-Post Media Sosial Kampus</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Publikasi Poster ke Instagram (Meta Graph API)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/organizer/events/{id}/publish-instagram</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadInstagramPlayground()">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="publishInstagramSample()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Right Response Inspector Panel -->
@@ -1121,7 +1182,11 @@
           body: {
             reminder_type: 'REMINDER_H1'
           }
-        }
+        },
+        event_recap: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/recap', body: null },
+        export_participants: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/export/participants', body: null },
+        export_applicants: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/export/applicants', body: null },
+        publish_instagram: { method: 'POST', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/publish-instagram', body: null }
       };
 
       const tpl = templates[key];
@@ -1635,6 +1700,36 @@
       testRoute(`/api/v1/organizer/events/${eventId}/reminders`, 'POST', {
         reminder_type: type
       });
+    }
+
+    async function loadRecapPlayground() {
+      const eventId = await getSampleEventId();
+      loadToPlayground('GET', `/api/v1/organizer/events/${eventId}/recap`);
+    }
+
+    async function getRecapSample() {
+      const eventId = await getSampleEventId();
+      testRoute(`/api/v1/organizer/events/${eventId}/recap`);
+    }
+
+    async function exportParticipantsSample() {
+      const eventId = await getSampleEventId();
+      testRoute(`/api/v1/organizer/events/${eventId}/export/participants`);
+    }
+
+    async function exportApplicantsSample() {
+      const eventId = await getSampleEventId();
+      testRoute(`/api/v1/organizer/events/${eventId}/export/applicants`);
+    }
+
+    async function loadInstagramPlayground() {
+      const eventId = await getSampleEventId();
+      loadToPlayground('POST', `/api/v1/organizer/events/${eventId}/publish-instagram`);
+    }
+
+    async function publishInstagramSample() {
+      const eventId = await getSampleEventId();
+      testRoute(`/api/v1/organizer/events/${eventId}/publish-instagram`, 'POST');
     }
   </script>
 </body>

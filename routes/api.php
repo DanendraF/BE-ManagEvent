@@ -47,6 +47,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/events/{id}/attendance', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'eventAttendance']);
         Route::get('/events/{id}/notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'eventLogs']);
         Route::post('/events/{id}/reminders', [\App\Http\Controllers\Api\V1\NotificationController::class, 'broadcastReminders']);
+
+        // Rekapitulasi & Ekspor Laporan Kegiatan
+        Route::get('/events/{id}/recap', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'recap']);
+        Route::get('/events/{id}/export/participants', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'exportParticipants']);
+        Route::get('/events/{id}/export/applicants', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'exportApplicants']);
+        Route::post('/events/{id}/publish-instagram', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'publishInstagram']);
     });
 
     // ==========================================

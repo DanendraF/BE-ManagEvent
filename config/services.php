@@ -41,4 +41,12 @@ return [
         'timeout' => (int) env('WHATSAPP_TIMEOUT', 10),
     ],
 
+    'instagram' => [
+        'account_id' => env('INSTAGRAM_ACCOUNT_ID', ''),
+        'access_token' => env('INSTAGRAM_ACCESS_TOKEN', ''),
+        'graph_version' => env('INSTAGRAM_GRAPH_VERSION', 'v19.0'),
+        'base_url' => env('INSTAGRAM_BASE_URL', 'https://graph.facebook.com'),
+        'timeout' => (int) env('INSTAGRAM_TIMEOUT', 15),
+    ],
+
 ];

@@ -60,6 +60,7 @@ php artisan test
 | **Oprec Panitia & Seleksi** | `php artisan test --filter RecruitmentTest` | Validasi magic bytes PDF CV, pemilihan divisi valid, proteksi anti-double entry, dashboard pelamar panitia, dan update seleksi |
 | **Presensi & Sertifikat** | `php artisan test --filter AttendanceTest` | Scan presensi hari-H dengan `hash_equals()`, anti-double check-in, dan e-sertifikat otomatis |
 | **Notifikasi & Pengingat** | `php artisan test --filter NotificationTest` | Pola resilient WhatsApp $\rightarrow$ Fallback Email, antrean queue job, exponential backoff, idempotency, scheduler pengingat H-1/H-3, dan API log panitia |
+| **Auto-Post Instagram & Rekap** | `php artisan test --filter InstagramAndReportingTest` | Integrasi Meta Graph API 2-step publishing, idempotency post, metrik dashboard rekapitulasi, dan ekspor CSV ber-BOM UTF-8 |
 
 ### Opsi Tambahan yang Sangat Berguna Saat Debugging:
 ```bash
@@ -80,7 +81,7 @@ Selain PHPUnit, sistem ini dilengkapi tool siap pakai tanpa instalasi tambahan:
 ```bash
 php artisan api:test
 ```
-*Fungsi:* Command internal yang menjalankan **34 skenario HTTP internal end-to-end**:
+*Fungsi:* Command internal yang menjalankan **37 skenario HTTP internal end-to-end**:
 1. Login akun Panitia LEM FTI
 2. Validasi login password salah (422)
 3. Blokir request tanpa token (401)
@@ -115,6 +116,9 @@ php artisan api:test
 32. Pemuatan riwayat log notifikasi dan ringkasan metrik pengiriman untuk panitia (200)
 33. Penjadwalan manual pengingat acara (broadcast reminders) ke antrean queue peserta (200)
 34. Simulasi scan scheduler pengingat otomatis (`events:send-reminders --dry-run`) (Exit Code 0)
+35. Pemuatan rekapitulasi komprehensif dashboard panitia (peserta, kehadiran, oprec, e-sertifikat, notifikasi) (200)
+36. Ekspor berkas rekap peserta & absensi berformat CSV standar Excel (BOM UTF-8) (200)
+37. Auto-post poster kegiatan resmi ke Instagram Kampus via Meta Graph API container publishing (200)
 
 ### B. Interactive Web UI Tester (Browser)
 1. Jalankan `php artisan serve`
