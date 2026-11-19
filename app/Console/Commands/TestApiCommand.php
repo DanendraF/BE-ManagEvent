@@ -42,6 +42,10 @@ class TestApiCommand extends Command
         $passed = 0;
         $failed = 0;
 
+        // Reset rate limiter for test IP and emails so automated runs are not throttled
+        \Illuminate\Support\Facades\RateLimiter::clear('lemfti@uii.ac.id|127.0.0.1');
+        \Illuminate\Support\Facades\RateLimiter::clear('admin.dpm@uii.ac.id|127.0.0.1');
+
         // 1. Test POST /api/v1/auth/login with Organizer credentials
         $this->comment('1. Testing POST /api/v1/auth/login (Panitia LEM FTI)...');
         $loginRes = $this->dispatchRequest('POST', '/api/v1/auth/login', [
@@ -197,6 +201,76 @@ class TestApiCommand extends Command
             $failed++;
         }
 
+        // 12. Test POST /api/v1/organizer/events (Create Draft Event)
+        $this->comment('12. Testing POST /api/v1/organizer/events (Create Draft Event by Panitia)...');
+        $orgUser = User::where('email', 'lemfti@uii.ac.id')->first();
+        $orgTok = $orgUser?->createToken('cli_org_token')->plainTextToken;
+
+        $createdEventId = null;
+        if ($orgTok) {
+            $createRes = $this->dispatchRequest('POST', '/api/v1/organizer/events', [
+                'title' => 'Webinar Karir Tech 2026 (Tester CLI ' . rand(100, 999) . ')',
+                'category_id' => 1,
+                'description' => 'Webinar strategi tembus magang top tech company.',
+                'activity_type' => 'PARTICIPANT_EVENT',
+                'poster_url' => 'https://storage.com/poster.jpg',
+                'quota_total' => 100,
+                'start_time' => now()->addDays(10)->toISOString(),
+                'end_time' => now()->addDays(10)->addHours(3)->toISOString(),
+                'location' => 'Zoom Meeting Kampus Terpadu UII',
+                'auto_post_ig' => true,
+            ], ['HTTP_AUTHORIZATION' => 'Bearer ' . $orgTok]);
+
+            if ($createRes->getStatusCode() === 201) {
+                $createdData = json_decode($createRes->getContent(), true);
+                $createdEventId = $createdData['data']['id'] ?? null;
+                $this->info('   ✓ Status: 201 Created | Draf Event ID: ' . $createdEventId . ' | Status: ' . $createdData['data']['status']);
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 201, got ' . $createRes->getStatusCode() . ' - ' . $createRes->getContent());
+                $failed++;
+            }
+        }
+
+        // 13. Test POST /api/v1/organizer/events/{id}/submit (Submit for Approval)
+        if ($createdEventId && $orgTok) {
+            $this->comment('13. Testing POST /api/v1/organizer/events/{id}/submit (Submit Draft to DPM)...');
+            $submitRes = $this->dispatchRequest('POST', "/api/v1/organizer/events/{$createdEventId}/submit", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgTok,
+            ]);
+
+            if ($submitRes->getStatusCode() === 200) {
+                $subData = json_decode($submitRes->getContent(), true);
+                $this->info('   ✓ Status: 200 OK | Transisi Status: ' . $subData['data']['status']);
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $submitRes->getStatusCode());
+                $failed++;
+            }
+        }
+
+        // 14. Test POST /api/v1/admin/events/{id}/approve (Superadmin DPM Approves Event)
+        if ($createdEventId) {
+            $this->comment('14. Testing POST /api/v1/admin/events/{id}/approve (DPM Superadmin Approval)...');
+            $adminUser = User::where('email', 'admin.dpm@uii.ac.id')->first();
+            $adminTok = $adminUser?->createToken('cli_admin_token')->plainTextToken;
+
+            if ($adminTok) {
+                $approveRes = $this->dispatchRequest('POST', "/api/v1/admin/events/{$createdEventId}/approve", [], [
+                    'HTTP_AUTHORIZATION' => 'Bearer ' . $adminTok,
+                ]);
+
+                if ($approveRes->getStatusCode() === 200) {
+                    $appData = json_decode($approveRes->getContent(), true);
+                    $this->info('   ✓ Status: 200 OK | Event Resmi APPROVED & PUBLISHED | Status: ' . $appData['data']['status']);
+                    $passed++;
+                } else {
+                    $this->error('   ✗ FAILED: Expected 200, got ' . $approveRes->getStatusCode());
+                    $failed++;
+                }
+            }
+        }
+
         // Summary
         $this->info('');
         $this->line('===============================================================');
@@ -215,6 +289,9 @@ class TestApiCommand extends Command
      */
     protected function dispatchRequest(string $method, string $uri, array $parameters = [], array $server = []): Response
     {
+        // Reset auth guards so multiple sequential requests in the CLI command do not reuse cached users
+        app('auth')->forgetGuards();
+
         $server = array_merge([
             'HTTP_ACCEPT' => 'application/json',
             'CONTENT_TYPE' => 'application/json',

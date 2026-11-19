@@ -380,3 +380,128 @@
   "errors": []
 }
 ```
+
+
+---
+
+## 5. Modul Manajemen Acara Panitia (Organizer) & Kurasi DPM (Super Admin)
+
+### 5.1 Buat Draf Acara Baru (Panitia)
+- **URL:** `POST /api/v1/organizer/events`
+- **Akses:** Panitia (`ORGANIZER`), Superadmin (`SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+
+**Request Body (Acara Peserta):**
+```json
+{
+  "title": "Seminar Nasional Cyber Security 2026",
+  "category_id": 1,
+  "description": "Membahas keamanan siber dan perlindungan data pribadi di era AI.",
+  "activity_type": "PARTICIPANT_EVENT",
+  "poster_url": "https://storage.uii-event.id/posters/cyber.jpg",
+  "quota_total": 150,
+  "start_time": "2026-12-10T08:30:00Z",
+  "end_time": "2026-12-10T12:00:00Z",
+  "location": "Auditorium KH. Abdurrahman Wahid FTI UII",
+  "auto_post_ig": true
+}
+```
+
+**Request Body (Acara Open Recruitment Panitia):**
+```json
+{
+  "title": "Oprec Panitia Pensi Kampus 2026",
+  "category_id": 5,
+  "description": "Perekrutan panitia pentas seni akbar tahunan UII.",
+  "activity_type": "COMMITTEE_RECRUITMENT",
+  "poster_url": "https://storage.uii-event.id/posters/pensi.jpg",
+  "quota_total": 80,
+  "start_time": "2026-12-15T08:00:00Z",
+  "end_time": "2026-12-15T16:00:00Z",
+  "location": "Student Center Kampus Terpadu UII",
+  "divisions": [
+    { "name": "Divisi Acara", "quota": 25, "description": "Konsep & rundown" },
+    { "name": "Divisi Humas", "quota": 20, "description": "Kemitraan eksternal" }
+  ]
+}
+```
+
+**Response Sukses (HTTP 201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Draf kegiatan berhasil dibuat. Silakan lengkapi data sebelum diajukan ke DPM.",
+  "data": {
+    "id": "event-uuid",
+    "title": "Seminar Nasional Cyber Security 2026",
+    "status": "DRAFT",
+    "quota_total": 150,
+    "quota_remaining": 150
+  }
+}
+```
+
+---
+
+### 5.2 Ajukan Draf Kegiatan ke DPM untuk Disetujui (Panitia)
+- **URL:** `POST /api/v1/organizer/events/{id}/submit`
+- **Akses:** Panitia pemilik acara (`ORGANIZER`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Kegiatan berhasil diajukan ke DPM untuk diverifikasi dan disetujui.",
+  "data": {
+    "id": "event-uuid",
+    "status": "PENDING_APPROVAL"
+  }
+}
+```
+
+---
+
+### 5.3 Persetujuan Acara Kampus (Super Admin DPM)
+- **URL:** `POST /api/v1/admin/events/{id}/approve`
+- **Akses:** Super Admin (`SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Kegiatan resmi disetujui (APPROVED) dan kini telah terpublikasi untuk mahasiswa.",
+  "data": {
+    "id": "event-uuid",
+    "status": "PUBLISHED"
+  }
+}
+```
+
+---
+
+### 5.4 Penolakan Pengajuan Acara (Super Admin DPM)
+- **URL:** `POST /api/v1/admin/events/{id}/reject`
+- **Akses:** Super Admin (`SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+
+**Request Body:**
+```json
+{
+  "rejection_reason": "Format poster tidak sesuai panduan visual resmi kampus dan surat izin ruangan belum dilampirkan."
+}
+```
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Pengajuan kegiatan telah ditolak. Catatan perbaikan telah dikirim ke panitia.",
+  "data": {
+    "id": "event-uuid",
+    "status": "REJECTED"
+  }
+}
+```
+*(Catatan: Panitia dapat merevisi dan mengajukan kembali kegiatan yang berstatus `REJECTED`).*

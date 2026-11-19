@@ -76,6 +76,15 @@
           <button class="secondary" onclick="testRoute('/api/v1/events/draf-konser-internal-2026')">GET /events/draft (Test 404)</button>
         </div>
       </div>
+
+      <div class="card">
+        <h4>5. Manajemen Panitia & DPM Approval (Fitur 04)</h4>
+        <div class="grid-btns">
+          <button onclick="testRoute('/api/v1/organizer/events')">GET /organizer/events (Daftar Acara Saya)</button>
+          <button class="secondary" onclick="createSampleDraft()">POST /organizer/events (Buat Draf Baru)</button>
+          <button class="contrast" onclick="testRoute('/api/v1/admin/events')">GET /admin/events (Daftar Pengajuan DPM)</button>
+        </div>
+      </div>
     </div>
 
     <div>
@@ -200,6 +209,35 @@
         renderResponse(res, data, 'GET', path);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'GET', path);
+      }
+    }
+
+    async function createSampleDraft() {
+      try {
+        const res = await fetch(`${baseUrl}/api/v1/organizer/events`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          },
+          body: JSON.stringify({
+            title: `Webinar Baru ${Date.now()}`,
+            category_id: 1,
+            description: 'Draf kegiatan baru untuk pengujian panitia.',
+            activity_type: 'PARTICIPANT_EVENT',
+            poster_url: 'https://storage.com/poster.jpg',
+            quota_total: 100,
+            start_time: new Date(Date.now() + 864000000).toISOString(),
+            end_time: new Date(Date.now() + 864000000 + 10800000).toISOString(),
+            location: 'Auditorium FTI UII',
+            auto_post_ig: true
+          })
+        });
+        const data = await res.json();
+        renderResponse(res, data, 'POST', '/api/v1/organizer/events');
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/organizer/events');
       }
     }
   </script>

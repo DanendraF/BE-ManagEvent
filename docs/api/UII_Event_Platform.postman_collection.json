@@ -257,7 +257,120 @@
       ]
     },
     {
-      "name": "3. RBAC & Hak Akses",
+      "name": "3. Manajemen Acara Panitia (Organizer)",
+      "item": [
+        {
+          "name": "Daftar Acara Saya (Organizer Events)",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/organizer/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizer", "events"]
+            }
+          }
+        },
+        {
+          "name": "Buat Draf Acara Baru (Peserta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Seminar Cyber Security Kampus 2026\",\n  \"category_id\": 1,\n  \"description\": \"Membahas etika hacking dan keamanan data perguruan tinggi.\",\n  \"activity_type\": \"PARTICIPANT_EVENT\",\n  \"poster_url\": \"https://storage.uii-event.id/posters/cyber.jpg\",\n  \"quota_total\": 120,\n  \"start_time\": \"2026-12-05T08:30:00Z\",\n  \"end_time\": \"2026-12-05T12:00:00Z\",\n  \"location\": \"Auditorium FTI UII\",\n  \"auto_post_ig\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/organizer/events",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizer", "events"]
+            }
+          }
+        },
+        {
+          "name": "Ajukan Draf ke DPM (/submit)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/organizer/events/{{eventId}}/submit",
+              "host": ["{{baseUrl}}"],
+              "path": ["organizer", "events", "{{eventId}}", "submit"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Kurasi & Approval Super Admin (DPM)",
+      "item": [
+        {
+          "name": "Daftar Seluruh Pengajuan Acara Kampus",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/events?status=PENDING_APPROVAL",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "events"],
+              "query": [
+                { "key": "status", "value": "PENDING_APPROVAL" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Setujui Acara (/approve)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/events/{{eventId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "events", "{{eventId}}", "approve"]
+            }
+          }
+        },
+        {
+          "name": "Tolak Acara (/reject)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejection_reason\": \"Proposal acara belum menyertakan perizinan ruang dan rundown belum lengkap.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/admin/events/{{eventId}}/reject",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "events", "{{eventId}}", "reject"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. RBAC & Hak Akses",
       "item": [
         {
           "name": "Test Akses Panitia (Organizer Only)",
