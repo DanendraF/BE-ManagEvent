@@ -78,3 +78,165 @@
 | **Presensi & Sertifikat** | | | | |
 | 19 | `POST` | `/attendance/scan` | Organizer | Scanner presensi hari-H (HMAC verify & auto sertifikat) |
 | 20 | `GET` | `/certificates/verify/{hash}` | Publik | Verifikasi keabsahan sertifikat publik SKPI |
+
+
+---
+
+## 3. Spesifikasi Detail Endpoint Autentikasi
+
+### 3.1 Registrasi Akun Mahasiswa
+- **URL:** `POST /api/v1/auth/register`
+- **Akses:** Publik (Rate limit: 5x/menit)
+- **Headers:** `Content-Type: application/json`, `Accept: application/json`
+
+**Request Body:**
+```json
+{
+  "name": "Ahmad Fauzan",
+  "email": "21523001@students.uii.ac.id",
+  "password": "Password123!",
+  "password_confirmation": "Password123!",
+  "phone_number": "6281234567890",
+  "nim": "21523001",
+  "faculty": "Fakultas Teknologi Industri",
+  "study_program": "Informatika",
+  "role": "STUDENT"
+}
+```
+
+**Response Sukses (HTTP 201 Created):**
+```json
+{
+  "status": "success",
+  "message": "Registrasi akun berhasil. Selamat datang di UII Event Platform.",
+  "data": {
+    "user": {
+      "id": "9c148da7-10ca-4d54-b17e-1e5743a049f6",
+      "nim": "21523001",
+      "name": "Ahmad Fauzan",
+      "email": "21523001@students.uii.ac.id",
+      "phone_number": "6281234567890",
+      "faculty": "Fakultas Teknologi Industri",
+      "study_program": "Informatika",
+      "roles": [
+        {
+          "id": 1,
+          "name": "STUDENT",
+          "label": "Mahasiswa UII"
+        }
+      ],
+      "created_at": "2026-11-19T05:00:00.000000Z"
+    },
+    "token": "1|sanctum_plain_text_token_string",
+    "token_type": "Bearer"
+  },
+  "meta": {
+    "timestamp": "2026-11-19T05:00:00Z",
+    "version": "1.0"
+  }
+}
+```
+
+---
+
+### 3.2 Login Pengguna
+- **URL:** `POST /api/v1/auth/login`
+- **Akses:** Publik (Rate limit: 5x/menit)
+- **Headers:** `Content-Type: application/json`, `Accept: application/json`
+
+**Request Body:**
+```json
+{
+  "email": "21523001@students.uii.ac.id",
+  "password": "Password123!"
+}
+```
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Login berhasil.",
+  "data": {
+    "user": {
+      "id": "9c148da7-10ca-4d54-b17e-1e5743a049f6",
+      "nim": "21523001",
+      "name": "Ahmad Fauzan",
+      "email": "21523001@students.uii.ac.id",
+      "phone_number": "6281234567890",
+      "faculty": "Fakultas Teknologi Industri",
+      "study_program": "Informatika",
+      "roles": [
+        {
+          "id": 1,
+          "name": "STUDENT",
+          "label": "Mahasiswa UII"
+        }
+      ],
+      "created_at": "2026-11-19T05:00:00.000000Z"
+    },
+    "token": "2|sanctum_plain_text_token_string",
+    "token_type": "Bearer"
+  },
+  "meta": {
+    "timestamp": "2026-11-19T05:00:00Z",
+    "version": "1.0"
+  }
+}
+```
+
+---
+
+### 3.3 Ambil Profil Pengguna Saat Ini
+- **URL:** `GET /api/v1/auth/me`
+- **Akses:** Memerlukan Autentikasi (`Bearer Token`)
+- **Headers:** `Authorization: Bearer <token>`, `Accept: application/json`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Data profil berhasil diambil.",
+  "data": {
+    "id": "9c148da7-10ca-4d54-b17e-1e5743a049f6",
+    "nim": "21523001",
+    "name": "Ahmad Fauzan",
+    "email": "21523001@students.uii.ac.id",
+    "phone_number": "6281234567890",
+    "faculty": "Fakultas Teknologi Industri",
+    "study_program": "Informatika",
+    "roles": [
+      {
+        "id": 1,
+        "name": "STUDENT",
+        "label": "Mahasiswa UII"
+      }
+    ],
+    "created_at": "2026-11-19T05:00:00.000000Z"
+  },
+  "meta": {
+    "timestamp": "2026-11-19T05:00:00Z",
+    "version": "1.0"
+  }
+}
+```
+
+---
+
+### 3.4 Logout (Pencabutan Token)
+- **URL:** `POST /api/v1/auth/logout`
+- **Akses:** Memerlukan Autentikasi (`Bearer Token`)
+- **Headers:** `Authorization: Bearer <token>`, `Accept: application/json`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Logout berhasil. Sesi token telah dicabut.",
+  "data": null,
+  "meta": {
+    "timestamp": "2026-11-19T05:00:00Z",
+    "version": "1.0"
+  }
+}
+```

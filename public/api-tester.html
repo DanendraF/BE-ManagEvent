@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Tester — UII Event Management Platform</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root {
+      --pico-font-size: 14px;
+    }
+    body { padding: 2rem; max-width: 1200px; margin: auto; }
+    .badge { padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+    .badge-get { background: #0284c7; color: white; }
+    .badge-post { background: #16a34a; color: white; }
+    .badge-200 { background: #22c55e; color: white; }
+    .badge-403 { background: #f97316; color: white; }
+    .badge-422 { background: #ef4444; color: white; }
+    .badge-401 { background: #eab308; color: black; }
+    pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 6px; max-height: 400px; overflow-y: auto; }
+    .card { background: var(--pico-card-background-color); border: 1px solid var(--pico-muted-border-color); padding: 1.25rem; border-radius: 8px; margin-bottom: 1rem; }
+    .grid-btns { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🚀 UII Event Platform — Interactive API Tester</h1>
+    <p>Alat pengujian cepat endpoint REST API backend (Laravel 12 + Sanctum + RBAC).</p>
+  </header>
+
+  <div class="card">
+    <h3>🔑 Status Sesi Token Aktif</h3>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <input type="text" id="tokenInput" placeholder="Belum ada Bearer Token aktif (Login terlebih dahulu di bawah)" readonly style="flex: 1; font-family: monospace;">
+      <button class="secondary" onclick="clearToken()" style="width: auto;">Hapus Token</button>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <h4>1. Quick Login (Auto-Set Token)</h4>
+        <div class="grid-btns">
+          <button onclick="loginUser('lemfti@uii.ac.id', 'Password123!')">Login Panitia (LEM FTI)</button>
+          <button class="contrast" onclick="loginUser('admin.dpk@uii.ac.id', 'Password123!')">Login Superadmin (DPK)</button>
+          <button class="secondary" onclick="loginUser('21523001@students.uii.ac.id', 'Password123!')">Login Mahasiswa (Fauzan)</button>
+          <button class="outline" onclick="loginUser('lemfti@uii.ac.id', 'WrongPass!')">Test Login Gagal (422)</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>2. Profil & Autentikasi</h4>
+        <div class="grid-btns">
+          <button onclick="fetchMe()">GET /api/v1/auth/me (Profil)</button>
+          <button class="secondary" onclick="logoutUser()">POST /api/v1/auth/logout</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h4>3. Uji Hak Akses Middleware (RBAC)</h4>
+        <div class="grid-btns">
+          <button onclick="testRoute('/api/v1/test/organizer-only')">GET /api/v1/test/organizer-only</button>
+          <button class="contrast" onclick="testRoute('/api/v1/test/superadmin-only')">GET /api/v1/test/superadmin-only</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h4>📡 Live Response Viewer</h4>
+          <span id="statusBadge" class="badge" style="display: none;"></span>
+        </div>
+        <p id="requestInfo" style="font-family: monospace; font-size: 0.85rem; color: #64748b; margin-bottom: 0.5rem;"></p>
+        <pre id="responseOutput">// Klik salah satu tombol di sebelah kiri untuk melihat hasil respons API...</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const baseUrl = 'http://127.0.0.1:8000';
+    let currentToken = localStorage.getItem('api_token') || '';
+
+    function updateTokenUI() {
+      const el = document.getElementById('tokenInput');
+      if (currentToken) {
+        el.value = currentToken;
+      } else {
+        el.value = '';
+      }
+    }
+    updateTokenUI();
+
+    function setToken(tok) {
+      currentToken = tok;
+      localStorage.setItem('api_token', tok);
+      updateTokenUI();
+    }
+
+    function clearToken() {
+      currentToken = '';
+      localStorage.removeItem('api_token');
+      updateTokenUI();
+      renderResponse(null, { message: 'Token telah dibersihkan dari penyimpanan lokal.' });
+    }
+
+    function renderResponse(res, data, method, path) {
+      const output = document.getElementById('responseOutput');
+      const badge = document.getElementById('statusBadge');
+      const info = document.getElementById('requestInfo');
+
+      if (method && path) {
+        info.innerText = `${method} ${path}`;
+      }
+
+      if (res) {
+        badge.style.display = 'inline-block';
+        badge.innerText = `HTTP ${res.status} ${res.statusText}`;
+        badge.className = 'badge ' + (res.status === 200 || res.status === 201 ? 'badge-200' : res.status === 403 ? 'badge-403' : res.status === 422 ? 'badge-422' : 'badge-401');
+      } else {
+        badge.style.display = 'none';
+      }
+
+      output.innerText = JSON.stringify(data, null, 2);
+    }
+
+    async function loginUser(email, password) {
+      try {
+        const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        renderResponse(res, data, 'POST', '/api/v1/auth/login');
+        if (data.data && data.data.token) {
+          setToken(data.data.token);
+        }
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/auth/login');
+      }
+    }
+
+    async function fetchMe() {
+      try {
+        const res = await fetch(`${baseUrl}/api/v1/auth/me`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          }
+        });
+        const data = await res.json();
+        renderResponse(res, data, 'GET', '/api/v1/auth/me');
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'GET', '/api/v1/auth/me');
+      }
+    }
+
+    async function logoutUser() {
+      try {
+        const res = await fetch(`${baseUrl}/api/v1/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          }
+        });
+        const data = await res.json();
+        renderResponse(res, data, 'POST', '/api/v1/auth/logout');
+        clearToken();
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/auth/logout');
+      }
+    }
+
+    async function testRoute(path) {
+      try {
+        const res = await fetch(`${baseUrl}${path}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          }
+        });
+        const data = await res.json();
+        renderResponse(res, data, 'GET', path);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'GET', path);
+      }
+    }
+  </script>
+</body>
+</html>

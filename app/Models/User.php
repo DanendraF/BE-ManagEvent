@@ -82,7 +82,12 @@ class User extends Authenticatable
     public function hasRole(RoleEnum|string $role): bool
     {
         $roleName = $role instanceof RoleEnum ? $role->value : $role;
-        return $this->roles->contains('name', $roleName);
+
+        if ($this->relationLoaded('roles')) {
+            return $this->roles->contains('name', $roleName);
+        }
+
+        return $this->roles()->where('name', $roleName)->exists();
     }
 
     public function isStudent(): bool
