@@ -24,6 +24,7 @@ class EventListResource extends JsonResource
             'title' => $this->title,
             'slug' => $this->slug,
             'category' => $this->category?->name,
+            'status' => $this->status->value,
             'activity_type' => $this->activity_type->value,
             'organizer_name' => $this->organizer?->name,
             'poster_url' => $this->poster_url,

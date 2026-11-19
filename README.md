@@ -4,7 +4,7 @@
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://php.net)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Sanctum](https://img.shields.io/badge/Sanctum-Token%20Auth-red?style=for-the-badge)](https://laravel.com/docs/sanctum)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
+[![Author](https://img.shields.io/badge/Author-Danendra%20Farrel%20Adriansyah-blue?style=for-the-badge)](https://github.com/DanendraF)
 
 > **Universitas Islam Indonesia (UII)** — Dewan Perwakilan Mahasiswa (DPM) & Lembaga Eksekutif Mahasiswa (LEM)  
 > *Sistem Informasi Manajemen & Publikasi Kegiatan Terpadu Mahasiswa Kampus*
@@ -115,10 +115,10 @@ Semua akun demo di-seed dengan password bawaan: **`Password123!`**
 
 | Role Sistem | Nama Pengguna | Alamat Email | Keterangan Akses |
 |---|---|---|---|
-| **SUPERADMIN** | Admin DPM UII | `admin.dpm@uii.ac.id` | Hak penuh kurasi, approval acara, & audit log kampus |
-| **ORGANIZER** | Sarah Nabila (LEM FTI) | `lemfti@uii.ac.id` | Pengelola & konseptor kegiatan ormawa / UKM |
-| **STUDENT** | Ahmad Fauzan (NIM: 21523001) | `21523001@students.uii.ac.id` | Mahasiswa FTI (Pendaftar peserta & tiket) |
-| **STUDENT** | Siti Rahmawati (NIM: 21523002) | `21523002@students.uii.ac.id` | Mahasiswa FBE (Pendaftar peserta & sertifikat) |
+| **SUPERADMIN** | DPM UII (Dewan Perwakilan Mahasiswa) | `admin.dpm@uii.ac.id` | Hak penuh kurasi, approval acara, & audit log kampus |
+| **ORGANIZER** | Sarah Nabila (LEM FTI UII) | `lemfti@uii.ac.id` | Pengelola & konseptor kegiatan ormawa / UKM |
+| **STUDENT** | Danendra Farrel Adriansyah (NIM: 21523001) | `21523001@students.uii.ac.id` | Mahasiswa FTI (Pendaftar peserta, tiket, & sertifikat) |
+| **STUDENT** | Muhammad Raihan Pratama (NIM: 21523002) | `21523002@students.uii.ac.id` | Mahasiswa FTI (Pendaftar peserta & tiket aktif) |
 
 ---
 
@@ -150,16 +150,22 @@ php artisan test
 
 ## 📑 Struktur Dokumentasi Proyek
 
-- 📊 [PROGRESS.md](PROGRESS.md) — Pelacak kemajuan pengembangan fitur per fitur.
-- 🚀 [docs/api/END_TO_END_API_TESTING_GUIDE.md](docs/api/END_TO_END_API_TESTING_GUIDE.md) — Panduan alur pengujian End-to-End REST API terurut dari awal hingga akhir.
-- 🛠️ [docs/COMMANDS_CHEAT_SHEET.md](docs/COMMANDS_CHEAT_SHEET.md) — Panduan lengkap perintah CLI, testing, dan bahan belajar pengembang.
-- 📖 [docs/api/API_DOCUMENTATION.md](docs/api/API_DOCUMENTATION.md) — Spesifikasi kontrak REST API, payload request/response, dan kamus error.
-- 📝 [docs/commits/](docs/commits/) — Laporan resmi verifikasi pengujian sebelum setiap commit Git dilakukan.
-- 📐 [docs/01_Master_PRD.md](docs/01_Master_PRD.md) — Master Product Requirement Document (PRD).
-- ⚙️ [docs/02_System_Specification_SRS.md](docs/02_System_Specification_SRS.md) — Spesifikasi Kebutuhan Perangkat Lunak (SRS).
-- 🗄️ [docs/03_Database_and_API_Contract.md](docs/03_Database_and_API_Contract.md) — Desain ERD & Kamus Data 3NF.
+| Dokumen | Lokasi Berkas | Deskripsi & Tujuan |
+|---|---|---|
+| 📊 **Pelacak Progress** | [`PROGRESS.md`](PROGRESS.md) | Catatan status pengerjaan fitur per fitur dan verifikasi pengujian. |
+| 🛡️ **Audit Keamanan** | [`docs/SECURITY_AUDIT_REPORT.md`](docs/SECURITY_AUDIT_REPORT.md) | Laporan audit pengerasan keamanan (Anti-Race Condition, Anti-IDOR, Anti-XSS, Magic Bytes, HMAC). |
+| 🚀 **Panduan Testing E2E** | [`docs/api/END_TO_END_API_TESTING_GUIDE.md`](docs/api/END_TO_END_API_TESTING_GUIDE.md) | Panduan langkah berurutan 8 fase pengujian menyeluruh (*End-to-End*) REST API. |
+| 🛠️ **Buku Saku Perintah CLI** | [`docs/COMMANDS_CHEAT_SHEET.md`](docs/COMMANDS_CHEAT_SHEET.md) | Panduan lengkap perintah CLI artisan, testing, database seeder, dan alur git. |
+| 📖 **Spesifikasi API Lengkap** | [`docs/api/API_DOCUMENTATION.md`](docs/api/API_DOCUMENTATION.md) | Spesifikasi kontrak REST API, header, skema request/response, dan format error. |
+| 📝 **Laporan Commit Fitur** | [`docs/commits/`](docs/commits/) | Arsip laporan verifikasi pengujian resmi untuk setiap fitur yang di-commit. |
+| 📐 **Master PRD** | [`docs/01_Master_PRD.md`](docs/01_Master_PRD.md) | Dokumen Kebutuhan Produk (*Product Requirement Document*) sistem terpadu kampus. |
+| ⚙️ **Spesifikasi Sistem (SRS)** | [`docs/02_System_Specification_SRS.md`](docs/02_System_Specification_SRS.md) | Dokumen Spesifikasi Kebutuhan Perangkat Lunak & fungsionalitas sistem. |
+| 🗄️ **Desain ERD & Data 3NF** | [`docs/03_Database_and_API_Contract.md`](docs/03_Database_and_API_Contract.md) | Desain basis data relasional PostgreSQL, kamus data 3NF, dan skema tabel. |
 
 ---
 
-## 📄 Lisensi
-Hak Cipta © 2026 Danendra Farrel Adriansyah. Berlisensi di bawah (LICENSE).
+## 👤 Penulis (Author)
+
+**Danendra Farrel Adriansyah**  
+Sistem Informasi Manajemen & Publikasi Kegiatan Terpadu Mahasiswa — Universitas Islam Indonesia (UII)  
+GitHub: [@DanendraF](https://github.com/DanendraF)

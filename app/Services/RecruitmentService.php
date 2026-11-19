@@ -87,14 +87,15 @@ class RecruitmentService
             $event->decrement('quota_remaining');
 
             // 7. Create Registration record (Backed by DB Partial Unique Index)
+            $sanitizedAnswers = $this->sanitizeCustomAnswers($data['custom_answers'] ?? null);
             $registration = Registration::create([
                 'id' => (string) Str::uuid(),
                 'user_id' => $user->id,
                 'event_id' => $event->id,
                 'registration_type' => 'COMMITTEE',
-                'custom_answers' => $data['custom_answers'] ?? null,
-                'division_pref_1' => $data['division_pref_1'],
-                'division_pref_2' => $data['division_pref_2'] ?? null,
+                'custom_answers' => $sanitizedAnswers,
+                'division_pref_1' => strip_tags((string) $data['division_pref_1']),
+                'division_pref_2' => ! empty($data['division_pref_2']) ? strip_tags((string) $data['division_pref_2']) : null,
                 'cv_file_url' => $storedCvPath,
                 'selection_status' => SelectionStatusEnum::SUBMITTED,
                 'status' => RegistrationStatusEnum::REGISTERED,
@@ -112,7 +113,7 @@ class RecruitmentService
      */
     public function getMyApplications(User $user, int $perPage = 15): LengthAwarePaginator
     {
-        return Registration::with(['event.divisions'])
+        return Registration::with(['event.divisions', 'user'])
             ->where('user_id', $user->id)
             ->where('registration_type', 'COMMITTEE')
             ->orderByDesc('registered_at')
@@ -256,5 +257,32 @@ class RecruitmentService
         $directory = 'recruitment_docs/' . $eventId;
 
         return $file->storeAs($directory, $randomFileName, 'local');
+    }
+
+    /**
+     * Recursively sanitize custom answers to prevent Stored XSS injection.
+     *
+     * @param array<string, mixed>|null $answers
+     * @return array<string, mixed>|null
+     */
+    protected function sanitizeCustomAnswers(?array $answers): ?array
+    {
+        if (empty($answers)) {
+            return null;
+        }
+
+        $sanitized = [];
+        foreach ($answers as $key => $value) {
+            $safeKey = strip_tags((string) $key);
+            if (is_string($value)) {
+                $sanitized[$safeKey] = trim(strip_tags($value));
+            } elseif (is_array($value)) {
+                $sanitized[$safeKey] = $this->sanitizeCustomAnswers($value);
+            } else {
+                $sanitized[$safeKey] = $value;
+            }
+        }
+
+        return $sanitized;
     }
 }

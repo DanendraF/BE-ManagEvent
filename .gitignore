@@ -22,3 +22,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local Cheatsheet (Do not commit to GitHub)
+/docs/BACKEND_CHEATSHEET.md
+BACKEND_CHEATSHEET.md

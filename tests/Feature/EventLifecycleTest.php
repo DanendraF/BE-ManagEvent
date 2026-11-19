@@ -129,6 +129,44 @@ class EventLifecycleTest extends TestCase
     }
 
     /**
+     * Test organizer can create draft event using 'PARTICIPANT' alias from frontend.
+     */
+    public function test_organizer_can_create_draft_event_with_participant_alias(): void
+    {
+        $payload = [
+            'title' => 'Workshop UI/UX Design Figma 2026',
+            'category_id' => (string) $this->category->id,
+            'description' => 'Pelatihan desain UI/UX intensif menggunakan Figma.',
+            'activity_type' => 'PARTICIPANT',
+            'poster_url' => 'https://storage.uii-event.id/posters/uiux-2026.jpg',
+            'quota_total' => '80',
+            'start_time' => now()->addDays(5)->format('Y-m-d\TH:i'),
+            'end_time' => now()->addDays(5)->addHours(4)->format('Y-m-d\TH:i'),
+            'location' => 'Lab Komputer Gedung KH Mas Mansur UII',
+            'auto_post_ig' => true,
+        ];
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $this->organizerToken)
+            ->postJson('/api/v1/organizer/events', $payload);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'status' => 'success',
+                'data' => [
+                    'title' => 'Workshop UI/UX Design Figma 2026',
+                    'activity_type' => ActivityTypeEnum::PARTICIPANT_EVENT->value,
+                    'status' => 'DRAFT',
+                    'quota_total' => 80,
+                ],
+            ]);
+
+        $this->assertDatabaseHas('events', [
+            'title' => 'Workshop UI/UX Design Figma 2026',
+            'activity_type' => ActivityTypeEnum::PARTICIPANT_EVENT->value,
+        ]);
+    }
+
+    /**
      * Test organizer can create oprec event with divisions.
      */
     public function test_organizer_can_create_recruitment_event_with_divisions(): void

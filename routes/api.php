@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
     // 3. Modul Panitia Penyelenggara (Organizer)
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:ORGANIZER,SUPERADMIN'])->prefix('organizer')->group(function () {
+        Route::post('/upload-poster', [\App\Http\Controllers\Api\V1\PosterUploadController::class, 'upload']);
         Route::get('/events', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'index']);
         Route::post('/events', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'store']);
         Route::get('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'show']);
@@ -71,7 +72,8 @@ Route::prefix('v1')->group(function () {
             ->middleware('throttle:registrations');
         Route::get('/my-tickets', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'myTickets']);
         Route::get('/my-tickets/{ticket_code}', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'showTicket']);
-        Route::post('/my-tickets/{ticket_code}/cancel', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'cancelTicket']);
+        Route::post('/my-tickets/{ticket_code}/cancel', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'cancelTicket'])
+            ->middleware('throttle:registrations');
 
         // Jalur Pendaftaran Oprec Panitia Mahasiswa
         Route::post('/events/{id}/apply', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'apply'])

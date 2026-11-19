@@ -58,12 +58,13 @@ class RegistrationService
             $event->decrement('quota_remaining');
 
             // Create Registration record (Backed by DB-level Partial Unique Index)
+            $sanitizedAnswers = $this->sanitizeCustomAnswers($customAnswers);
             $registration = Registration::create([
                 'id' => (string) Str::uuid(),
                 'user_id' => $user->id,
                 'event_id' => $event->id,
                 'registration_type' => 'PARTICIPANT',
-                'custom_answers' => ! empty($customAnswers) ? $customAnswers : null,
+                'custom_answers' => $sanitizedAnswers,
                 'status' => RegistrationStatusEnum::REGISTERED,
                 'registered_at' => now(),
             ]);
@@ -201,5 +202,32 @@ class RegistrationService
         }
 
         return $query->orderBy('registered_at', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * Recursively sanitize custom answers to prevent Stored XSS injection.
+     *
+     * @param array<string, mixed>|null $answers
+     * @return array<string, mixed>|null
+     */
+    protected function sanitizeCustomAnswers(?array $answers): ?array
+    {
+        if (empty($answers)) {
+            return null;
+        }
+
+        $sanitized = [];
+        foreach ($answers as $key => $value) {
+            $safeKey = strip_tags((string) $key);
+            if (is_string($value)) {
+                $sanitized[$safeKey] = trim(strip_tags($value));
+            } elseif (is_array($value)) {
+                $sanitized[$safeKey] = $this->sanitizeCustomAnswers($value);
+            } else {
+                $sanitized[$safeKey] = $value;
+            }
+        }
+
+        return $sanitized;
     }
 }

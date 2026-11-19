@@ -1,0 +1,577 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "UII Event Management API",
+    "description": "Dokumentasi REST API Resmi Sistem Manajemen Event & Kepanitiaan Kampus Universitas Islam Indonesia (UII). Dilengkapi dengan autentikasi berbasis Laravel Sanctum Bearer Token, kontrol akses berbasis peran (RBAC: Superadmin DPM, Panitia Ormawa/UKM, Mahasiswa), serta tanda tangan digital presensi QR HMAC-SHA256.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Direktorat BSI & DPM UII",
+      "email": "bsi@uii.ac.id"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8000",
+      "description": "Server Pengembangan Lokal"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Sanctum Token",
+        "description": "Masukkan token Bearer yang diperoleh setelah memanggil endpoint POST /api/v1/auth/login"
+      }
+    },
+    "schemas": {
+      "ApiResponseSuccess": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "success" },
+          "message": { "type": "string", "example": "Operasi berhasil dilakukan." },
+          "data": { "type": "object" },
+          "meta": { "type": "object" }
+        }
+      },
+      "ApiResponseError": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "error" },
+          "error_code": { "type": "string", "example": "VALIDATION_ERROR" },
+          "message": { "type": "string", "example": "Data yang dikirimkan tidak valid." },
+          "errors": { "type": "object" }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "1. Autentikasi & RBAC", "description": "Registrasi mandiri mahasiswa, login multi-role, profil pengguna, dan logout" },
+    { "name": "2. Katalog Acara Publik", "description": "Daftar kategori acara, pencarian, dan katalog kegiatan terpublikasi" },
+    { "name": "3. Manajemen Acara Panitia", "description": "Unggah poster gambar, draft acara ormawa, pengajuan proposal ke DPM" },
+    { "name": "4. Pendaftaran Tiket Mahasiswa", "description": "Registrasi tiket acara, dompet e-tiket dengan payload QR signed, dan pembatalan tiket" },
+    { "name": "5. Perekrutan Panitia (Oprec)", "description": "Pendaftaran panitia dengan berkas CV PDF, riwayat lamaran, dan kurasi seleksi divisi" },
+    { "name": "6. Presensi & E-Sertifikat", "description": "Pemindaian QR presensi hari-H, penerbitan sertifikat otomatis, dan verifikasi hash publik" },
+    { "name": "7. Notifikasi & Pengingat", "description": "Log notifikasi WhatsApp / Email dan siaran pengingat kegiatan H-1" },
+    { "name": "8. Rekapitulasi & Ekspor Laporan", "description": "Statistik kehadiran, ekspor CSV peserta / pelamar, dan integrasi Instagram Graph API" },
+    { "name": "9. Kurasi Proposal DPM UII", "description": "Persetujuan dan penolakan proposal kegiatan ormawa oleh Dewan Perwakilan Mahasiswa" }
+  ],
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["1. Autentikasi & RBAC"],
+        "summary": "Registrasi Mahasiswa Baru",
+        "description": "Mendaftarkan akun mahasiswa baru dengan email domain @students.uii.ac.id.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password", "password_confirmation", "nim", "phone_number"],
+                "properties": {
+                  "name": { "type": "string", "example": "Ahmad Fauzi" },
+                  "email": { "type": "string", "example": "21523099@students.uii.ac.id" },
+                  "password": { "type": "string", "example": "Password123!" },
+                  "password_confirmation": { "type": "string", "example": "Password123!" },
+                  "nim": { "type": "string", "example": "21523099" },
+                  "phone_number": { "type": "string", "example": "6281234567890" },
+                  "faculty": { "type": "string", "example": "Fakultas Teknologi Industri" },
+                  "study_program": { "type": "string", "example": "Informatika" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Registrasi berhasil dan token langsung diterbitkan" },
+          "422": { "description": "Validasi gagal (email sudah terdaftar, format password tidak sesuai)" }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["1. Autentikasi & RBAC"],
+        "summary": "Login Pengguna",
+        "description": "Autentikasi akun mahasiswa, panitia, atau superadmin DPM. Mengembalikan token Sanctum Bearer.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "example": "lemfti@uii.ac.id" },
+                  "password": { "type": "string", "example": "Password123!" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login berhasil, mengembalikan token bearer dan data user" },
+          "401": { "description": "Kredensial email atau password salah" }
+        }
+      }
+    },
+    "/api/v1/auth/profile": {
+      "get": {
+        "tags": ["1. Autentikasi & RBAC"],
+        "summary": "Informasi Profil Pengguna",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Data profil dan daftar role akun yang sedang login" },
+          "401": { "description": "Unauthenticated" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["1. Autentikasi & RBAC"],
+        "summary": "Logout & Cabut Token",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Token berhasil dicabut" }
+        }
+      }
+    },
+    "/api/v1/categories": {
+      "get": {
+        "tags": ["2. Katalog Acara Publik"],
+        "summary": "Daftar Kategori Kegiatan",
+        "responses": {
+          "200": { "description": "Daftar kategori acara (Seminar, Workshop, Lomba, Pengkaderan, dll.)" }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "tags": ["2. Katalog Acara Publik"],
+        "summary": "Daftar Acara Publik Terpublikasi",
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Kata kunci judul atau deskripsi" },
+          { "name": "category_id", "in": "query", "schema": { "type": "integer" }, "description": "ID kategori kegiatan" },
+          { "name": "activity_type", "in": "query", "schema": { "type": "string", "enum": ["PARTICIPANT_EVENT", "COMMITTEE_RECRUITMENT"] }, "description": "Tipe acara" },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "default": 15 }, "description": "Jumlah item per halaman" }
+        ],
+        "responses": {
+          "200": { "description": "Daftar kegiatan publik dengan pagination" }
+        }
+      }
+    },
+    "/api/v1/events/{slug}": {
+      "get": {
+        "tags": ["2. Katalog Acara Publik"],
+        "summary": "Detail Lengkap Acara Publik",
+        "parameters": [
+          { "name": "slug", "in": "path", "required": true, "schema": { "type": "string" }, "example": "workshop-laravel-api-2026" }
+        ],
+        "responses": {
+          "200": { "description": "Detail lengkap kegiatan beserta divisi kepanitiaan (jika oprec)" },
+          "404": { "description": "Kegiatan tidak ditemukan atau belum terpublikasi" }
+        }
+      }
+    },
+    "/api/v1/organizer/upload-poster": {
+      "post": {
+        "tags": ["3. Manajemen Acara Panitia"],
+        "summary": "Unggah Berkas Gambar Poster",
+        "description": "Mengunggah berkas gambar poster langsung dari komputer/perangkat (format JPG, PNG, WebP maksimal 5MB). Mengembalikan URL publik poster.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["poster"],
+                "properties": {
+                  "poster": { "type": "string", "format": "binary", "description": "Berkas gambar poster" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Poster berhasil diunggah" },
+          "422": { "description": "Format berkas bukan gambar atau ukuran melebihi 5MB" }
+        }
+      }
+    },
+    "/api/v1/organizer/events": {
+      "get": {
+        "tags": ["3. Manajemen Acara Panitia"],
+        "summary": "Daftar Acara Ormawa Panitia",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daftar acara yang dikelola panitia atau seluruh acara untuk Superadmin" }
+        }
+      },
+      "post": {
+        "tags": ["3. Manajemen Acara Panitia"],
+        "summary": "Buat Draf Kegiatan Baru",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "category_id", "activity_type", "poster_url", "quota_total", "start_time", "end_time", "location"],
+                "properties": {
+                  "title": { "type": "string", "example": "Seminar Nasional AI & Karir Teknologi 2026" },
+                  "category_id": { "type": "integer", "example": 1 },
+                  "activity_type": { "type": "string", "enum": ["PARTICIPANT_EVENT", "COMMITTEE_RECRUITMENT"], "example": "PARTICIPANT_EVENT" },
+                  "poster_url": { "type": "string", "example": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800" },
+                  "quota_total": { "type": "integer", "example": 150 },
+                  "start_time": { "type": "string", "example": "2026-11-25 09:00:00" },
+                  "end_time": { "type": "string", "example": "2026-11-25 16:00:00" },
+                  "location": { "type": "string", "example": "Auditorium FTI UII Lt. 3" },
+                  "description": { "type": "string", "example": "Seminar teknologi terkini dan persiapan karir kecerdasan buatan." },
+                  "auto_post_ig": { "type": "boolean", "example": true },
+                  "divisions": {
+                    "type": "array",
+                    "description": "Wajib diisi jika activity_type adalah COMMITTEE_RECRUITMENT",
+                    "items": {
+                      "type": "object",
+                      "required": ["name", "quota"],
+                      "properties": {
+                        "name": { "type": "string", "example": "Divisi Acara" },
+                        "quota": { "type": "integer", "example": 10 },
+                        "description": { "type": "string", "example": "Mengonsep rundown acara" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Draf acara berhasil dibuat" },
+          "422": { "description": "Validasi gagal" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/submit": {
+      "post": {
+        "tags": ["3. Manajemen Acara Panitia"],
+        "summary": "Ajukan Proposal Kegiatan ke DPM UII",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Proposal berhasil diajukan (status berubah ke PENDING_APPROVAL)" },
+          "400": { "description": "Acara tidak dalam status DRAFT" }
+        }
+      }
+    },
+    "/api/v1/events/{id}/register": {
+      "post": {
+        "tags": ["4. Pendaftaran Tiket Mahasiswa"],
+        "summary": "Daftar Tiket Acara (Mahasiswa)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "201": { "description": "Berhasil terdaftar dan e-tiket langsung diterbitkan" },
+          "400": { "description": "Sudah terdaftar sebelumnya (anti-double entry) atau kuota habis" }
+        }
+      }
+    },
+    "/api/v1/my-tickets": {
+      "get": {
+        "tags": ["4. Pendaftaran Tiket Mahasiswa"],
+        "summary": "Daftar E-Tiket Saya",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daftar tiket mahasiswa beserta payload QR digital HMAC-SHA256" }
+        }
+      }
+    },
+    "/api/v1/my-tickets/{code}/cancel": {
+      "post": {
+        "tags": ["4. Pendaftaran Tiket Mahasiswa"],
+        "summary": "Batalkan Tiket & Kembalikan Kuota",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "code", "in": "path", "required": true, "schema": { "type": "string" }, "example": "TIK-202611-ABCDEF" }
+        ],
+        "responses": {
+          "200": { "description": "Tiket dibatalkan dan kuota acara bertambah kembali" }
+        }
+      }
+    },
+    "/api/v1/events/{id}/apply": {
+      "post": {
+        "tags": ["5. Perekrutan Panitia (Oprec)"],
+        "summary": "Lamar Perekrutan Panitia (Oprec)",
+        "description": "Mengirimkan formulir pendaftaran kepanitiaan dengan melampirkan berkas Curriculum Vitae (PDF maksimal 5MB dengan verifikasi magic bytes).",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["division_pref_1", "cv_file"],
+                "properties": {
+                  "division_pref_1": { "type": "integer", "example": 1, "description": "ID Divisi Pilihan 1" },
+                  "division_pref_2": { "type": "integer", "example": 2, "description": "ID Divisi Pilihan 2 (Opsional)" },
+                  "cv_file": { "type": "string", "format": "binary", "description": "Berkas CV dalam format PDF asli (maks 5MB)" },
+                  "custom_answers": { "type": "string", "description": "JSON string jawaban kustom pendaftaran", "example": "{\"pengalaman\":\"Pernah menjadi panitia ospek fakultas\"}" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Lamaran berhasil diajukan" },
+          "422": { "description": "Berkas bukan format PDF asli atau divisi tidak valid" }
+        }
+      }
+    },
+    "/api/v1/my-applications": {
+      "get": {
+        "tags": ["5. Perekrutan Panitia (Oprec)"],
+        "summary": "Riwayat Lamaran Oprec Saya",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daftar status seleksi kepanitiaan mahasiswa" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/applicants": {
+      "get": {
+        "tags": ["5. Perekrutan Panitia (Oprec)"],
+        "summary": "Daftar Pelamar Panitia (Organizer)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+          { "name": "division_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["SUBMITTED", "INTERVIEW_SCHEDULED", "ACCEPTED", "REJECTED"] } }
+        ],
+        "responses": {
+          "200": { "description": "Daftar pelamar kepanitiaan dengan filter divisi & status" }
+        }
+      }
+    },
+    "/api/v1/organizer/registrations/{id}/selection": {
+      "patch": {
+        "tags": ["5. Perekrutan Panitia (Oprec)"],
+        "summary": "Update Status Seleksi & Catatan Wawancara",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["selection_status"],
+                "properties": {
+                  "selection_status": { "type": "string", "enum": ["SUBMITTED", "INTERVIEW_SCHEDULED", "ACCEPTED", "REJECTED"], "example": "ACCEPTED" },
+                  "notes": { "type": "string", "example": "Lolos wawancara dengan skor kepemimpinan tinggi." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status seleksi berhasil diperbarui" }
+        }
+      }
+    },
+    "/api/v1/attendance/check-in": {
+      "post": {
+        "tags": ["6. Presensi & E-Sertifikat"],
+        "summary": "Pindai QR Presensi Hari-H (Scanner Panitia)",
+        "description": "Memverifikasi payload tiket QR digital ber-signature HMAC-SHA256, mencatat jam kehadiran, dan langsung menerbitkan e-sertifikat.",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["qr_payload"],
+                "properties": {
+                  "qr_payload": { "type": "object", "description": "Payload JSON tiket QR lengkap dengan ticket_code, user_id, event_id, issued_at, dan signature" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Check-in berhasil dan e-sertifikat resmi langsung diterbitkan" },
+          "400": { "description": "Signature QR palsu / rusak atau peserta sudah check-in sebelumnya" },
+          "403": { "description": "Panitia memindai tiket dari acara ormawa lain" }
+        }
+      }
+    },
+    "/api/v1/certificates/verify/{hash}": {
+      "get": {
+        "tags": ["6. Presensi & E-Sertifikat"],
+        "summary": "Verifikasi Keaslian E-Sertifikat (Publik)",
+        "description": "Mengecek keabsahan sertifikat secara publik menggunakan cryptographic SHA-256 hash tanpa perlu login.",
+        "parameters": [
+          { "name": "hash", "in": "path", "required": true, "schema": { "type": "string" }, "example": "a1b2c3d4e5f6..." }
+        ],
+        "responses": {
+          "200": { "description": "Sertifikat asli terverifikasi resmi oleh UII" },
+          "404": { "description": "Sertifikat tidak valid atau tidak terdaftar" }
+        }
+      }
+    },
+    "/api/v1/my-certificates": {
+      "get": {
+        "tags": ["6. Presensi & E-Sertifikat"],
+        "summary": "Lemari E-Sertifikat Saya",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Daftar seluruh e-sertifikat resmi yang diperoleh mahasiswa" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/notifications": {
+      "get": {
+        "tags": ["7. Notifikasi & Pengingat"],
+        "summary": "Log Notifikasi Pengiriman Tiket & Pengingat",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Log pengiriman via WhatsApp Gateway dan Fallback Email SMTP" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/reminders": {
+      "post": {
+        "tags": ["7. Notifikasi & Pengingat"],
+        "summary": "Siarkan Pengingat Acara H-1",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Pengingat berhasil dijadwalkan dan disiarkan ke antrean pekerja" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/recap": {
+      "get": {
+        "tags": ["8. Rekapitulasi & Ekspor Laporan"],
+        "summary": "Rekapitulasi Lengkap Kegiatan",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Statistik persentase kehadiran, kuota, sertifikat terbit, dan status postingan Instagram" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/export/participants": {
+      "get": {
+        "tags": ["8. Rekapitulasi & Ekspor Laporan"],
+        "summary": "Ekspor Data Peserta (CSV)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "File stream CSV daftar peserta dan status kehadiran" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/export/applicants": {
+      "get": {
+        "tags": ["8. Rekapitulasi & Ekspor Laporan"],
+        "summary": "Ekspor Data Pelamar Oprec (CSV)",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "File stream CSV daftar pelamar oprec dan status kelulusan" }
+        }
+      }
+    },
+    "/api/v1/organizer/events/{id}/publish-instagram": {
+      "post": {
+        "tags": ["8. Rekapitulasi & Ekspor Laporan"],
+        "summary": "Picu Publikasi Manual ke Instagram Resmi",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Poster dan deskripsi kegiatan dipublikasikan ke feed Instagram via Meta Graph API" }
+        }
+      }
+    },
+    "/api/v1/admin/events": {
+      "get": {
+        "tags": ["9. Kurasi Proposal DPM UII"],
+        "summary": "Daftar Seluruh Pengajuan Kegiatan Kampus",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING_APPROVAL", "PUBLISHED", "REJECTED"] } }
+        ],
+        "responses": {
+          "200": { "description": "Daftar antrean kurasi proposal kegiatan ormawa se-UII" }
+        }
+      }
+    },
+    "/api/v1/admin/events/{id}/approve": {
+      "post": {
+        "tags": ["9. Kurasi Proposal DPM UII"],
+        "summary": "Setujui Proposal Acara (DPM UII)",
+        "description": "Menyetujui proposal kegiatan ormawa. Status berubah menjadi PUBLISHED, acara langsung tampil di Katalog Publik, dan otomatis diposting ke Instagram resmi kampus.",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "Acara berhasil disetujui dan terpublikasi ke katalog" }
+        }
+      }
+    },
+    "/api/v1/admin/events/{id}/reject": {
+      "post": {
+        "tags": ["9. Kurasi Proposal DPM UII"],
+        "summary": "Tolak Proposal Acara dengan Evaluasi",
+        "security": [{ "BearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rejection_reason"],
+                "properties": {
+                  "rejection_reason": { "type": "string", "example": "Jadwal bentrok dengan agenda universitas dan rincian kuota perlu disesuaikan." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Proposal ditolak dengan catatan evaluasi" }
+        }
+      }
+    }
+  }
+}

@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             EventCategorySeeder::class,
             UserSeeder::class,
             EventSeeder::class,
+            RealTransactionSeeder::class,
         ]);
     }
 }

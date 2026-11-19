@@ -289,4 +289,12 @@ Proyek ini menggunakan konvensi commit semantik (*Conventional Commits*) dan pri
 
 ---
 
+## 9. Referensi Dokumen & Audit Terkait
+
+- **[Panduan Pengujian End-to-End API (E2E)](file:///d:/Internship/Sistem%20Management%20Event%20-%20BSI%20UII/backend/docs/api/END_TO_END_API_TESTING_GUIDE.md)**: Skenario berurutan 8 fase pengujian backend.
+- **[Laporan Audit & Pengerasan Keamanan (Security Audit)](file:///d:/Internship/Sistem%20Management%20Event%20-%20BSI%20UII/backend/docs/SECURITY_AUDIT_REPORT.md)**: Rincian 8 lapis pertahanan (Anti-Race Condition, Anti-IDOR, Anti-XSS, Magic Bytes, HMAC, Rate Limiting).
+- **[Kamus Endpoint Lengkap (API Documentation)](file:///d:/Internship/Sistem%20Management%20Event%20-%20BSI%20UII/backend/docs/api/API_DOCUMENTATION.md)**: Spesifikasi request, response, dan payload JSON.
+
+---
+
 *Buku panduan ini diperbarui berkala seiring bertambahnya fitur baru pada Sistem Manajemen Event BSI UII.*

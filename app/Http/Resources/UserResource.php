@@ -27,6 +27,8 @@ class UserResource extends JsonResource
             'phone_number' => $this->phone_number,
             'faculty' => $this->faculty,
             'study_program' => $this->study_program,
+            'role' => $this->roles->first()?->name ?? 'STUDENT',
+            'role_label' => $this->roles->first()?->label ?? 'Mahasiswa',
             'roles' => $this->roles->map(fn ($role) => [
                 'id' => $role->id,
                 'name' => $role->name,

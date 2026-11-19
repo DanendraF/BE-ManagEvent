@@ -19,6 +19,24 @@ class UpdateEventRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->activity_type === 'PARTICIPANT') {
+            $this->merge(['activity_type' => ActivityTypeEnum::PARTICIPANT_EVENT->value]);
+        }
+
+        if ($this->has('category_id') && is_numeric($this->category_id)) {
+            $this->merge(['category_id' => (int) $this->category_id]);
+        }
+
+        if ($this->has('quota_total') && is_numeric($this->quota_total)) {
+            $this->merge(['quota_total' => (int) $this->quota_total]);
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>

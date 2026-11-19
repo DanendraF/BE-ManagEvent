@@ -22,8 +22,11 @@ class OrganizerEventService
     {
         $perPage = min(max($perPage, 1), 50);
 
-        $query = Event::where('organizer_id', $user->id)
-            ->with(['category']);
+        $query = Event::with(['category', 'organizer']);
+
+        if (! $user->isSuperAdmin()) {
+            $query->where('organizer_id', $user->id);
+        }
 
         if ($status) {
             $query->where('status', strtoupper($status));
@@ -40,24 +43,24 @@ class OrganizerEventService
     public function createDraft(User $user, array $data): Event
     {
         return DB::transaction(function () use ($user, $data) {
-            // Generate unique slug
-            $baseSlug = Str::slug($data['title']);
+            $title = strip_tags((string) $data['title']);
+            $baseSlug = Str::slug($title);
             $slug = $baseSlug . '-' . Str::lower(Str::random(5));
 
             $event = Event::create([
                 'id' => (string) Str::uuid(),
                 'organizer_id' => $user->id,
                 'category_id' => $data['category_id'],
-                'title' => $data['title'],
+                'title' => $title,
                 'slug' => $slug,
-                'description' => $data['description'] ?? null,
+                'description' => ! empty($data['description']) ? strip_tags((string) $data['description']) : null,
                 'activity_type' => $data['activity_type'],
                 'poster_url' => $data['poster_url'],
                 'quota_total' => $data['quota_total'],
                 'quota_remaining' => $data['quota_total'],
                 'start_time' => $data['start_time'],
                 'end_time' => $data['end_time'],
-                'location' => $data['location'],
+                'location' => strip_tags((string) $data['location']),
                 'status' => EventStatusEnum::DRAFT,
                 'auto_post_ig' => $data['auto_post_ig'] ?? true,
             ]);
@@ -89,17 +92,26 @@ class OrganizerEventService
             $updateData = [];
 
             if (isset($data['title'])) {
-                $updateData['title'] = $data['title'];
+                $safeTitle = strip_tags((string) $data['title']);
+                $updateData['title'] = $safeTitle;
                 // Update slug only if title changed
-                if ($data['title'] !== $event->title) {
-                    $updateData['slug'] = Str::slug($data['title']) . '-' . Str::lower(Str::random(5));
+                if ($safeTitle !== $event->title) {
+                    $updateData['slug'] = Str::slug($safeTitle) . '-' . Str::lower(Str::random(5));
                 }
             }
 
-            foreach (['category_id', 'description', 'activity_type', 'poster_url', 'start_time', 'end_time', 'location', 'auto_post_ig'] as $field) {
+            foreach (['category_id', 'activity_type', 'poster_url', 'start_time', 'end_time', 'auto_post_ig'] as $field) {
                 if (isset($data[$field])) {
                     $updateData[$field] = $data[$field];
                 }
+            }
+
+            if (isset($data['description'])) {
+                $updateData['description'] = ! empty($data['description']) ? strip_tags((string) $data['description']) : null;
+            }
+
+            if (isset($data['location'])) {
+                $updateData['location'] = strip_tags((string) $data['location']);
             }
 
             if (isset($data['quota_total'])) {
@@ -117,9 +129,9 @@ class OrganizerEventService
                 foreach ($data['divisions'] as $div) {
                     EventDivision::create([
                         'event_id' => $event->id,
-                        'name' => $div['name'],
+                        'name' => strip_tags((string) $div['name']),
                         'quota' => $div['quota'],
-                        'description' => $div['description'] ?? null,
+                        'description' => ! empty($div['description']) ? strip_tags((string) $div['description']) : null,
                     ]);
                 }
             }
