@@ -2,12 +2,22 @@
 
 declare(strict_types=1);
 
-use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\Attendance\AttendanceController;
+use App\Http\Controllers\Api\V1\Attendance\CertificateController;
+use App\Http\Controllers\Api\V1\Auth\AuthController;
+use App\Http\Controllers\Api\V1\Events\AdminEventController;
+use App\Http\Controllers\Api\V1\Events\EventCatalogController;
+use App\Http\Controllers\Api\V1\Events\EventReportingController;
+use App\Http\Controllers\Api\V1\Events\OrganizerEventController;
+use App\Http\Controllers\Api\V1\Events\PosterUploadController;
+use App\Http\Controllers\Api\V1\Notifications\NotificationController;
+use App\Http\Controllers\Api\V1\Registrations\RecruitmentController;
+use App\Http\Controllers\Api\V1\Registrations\RegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     // ==========================================
-    // 1. Modul Autentikasi (Auth)
+    // 1. Modul Autentikasi & RBAC (Auth)
     // ==========================================
     Route::prefix('auth')->group(function () {
         // Public endpoints with brute force protection (5 req/min)
@@ -26,77 +36,77 @@ Route::prefix('v1')->group(function () {
     // ==========================================
     // 2. Modul Katalog Kegiatan Publik (Events)
     // ==========================================
-    Route::get('/categories', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'categories']);
-    Route::get('/events', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'index']);
-    Route::get('/events/{slug}', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'show']);
-    Route::get('/certificates/verify/{hash}', [\App\Http\Controllers\Api\V1\CertificateController::class, 'verify']);
+    Route::get('/categories', [EventCatalogController::class, 'categories']);
+    Route::get('/events', [EventCatalogController::class, 'index']);
+    Route::get('/events/{slug}', [EventCatalogController::class, 'show']);
+    Route::get('/certificates/verify/{hash}', [CertificateController::class, 'verify']);
 
     // ==========================================
-    // 3. Modul Panitia Penyelenggara (Organizer)
+    // 3. Modul Panitia Penyelenggara (Organizer Events)
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:ORGANIZER,SUPERADMIN'])->prefix('organizer')->group(function () {
-        Route::post('/upload-poster', [\App\Http\Controllers\Api\V1\PosterUploadController::class, 'upload']);
-        Route::get('/events', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'index']);
-        Route::post('/events', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'store']);
-        Route::get('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'show']);
-        Route::put('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'update']);
-        Route::post('/events/{id}/submit', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'submit']);
-        Route::delete('/events/{id}', [\App\Http\Controllers\Api\V1\OrganizerEventController::class, 'destroy']);
-        Route::get('/events/{id}/registrations', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'eventRegistrations']);
-        Route::get('/events/{id}/applicants', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'eventApplicants']);
-        Route::patch('/registrations/{id}/selection', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'updateSelection']);
-        Route::get('/events/{id}/attendance', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'eventAttendance']);
-        Route::get('/events/{id}/notifications', [\App\Http\Controllers\Api\V1\NotificationController::class, 'eventLogs']);
-        Route::post('/events/{id}/reminders', [\App\Http\Controllers\Api\V1\NotificationController::class, 'broadcastReminders']);
+        Route::post('/upload-poster', [PosterUploadController::class, 'upload']);
+        Route::get('/events', [OrganizerEventController::class, 'index']);
+        Route::post('/events', [OrganizerEventController::class, 'store']);
+        Route::get('/events/{id}', [OrganizerEventController::class, 'show']);
+        Route::put('/events/{id}', [OrganizerEventController::class, 'update']);
+        Route::post('/events/{id}/submit', [OrganizerEventController::class, 'submit']);
+        Route::delete('/events/{id}', [OrganizerEventController::class, 'destroy']);
+        Route::get('/events/{id}/registrations', [RegistrationController::class, 'eventRegistrations']);
+        Route::get('/events/{id}/applicants', [RecruitmentController::class, 'eventApplicants']);
+        Route::patch('/registrations/{id}/selection', [RecruitmentController::class, 'updateSelection']);
+        Route::get('/events/{id}/attendance', [AttendanceController::class, 'eventAttendance']);
+        Route::get('/events/{id}/notifications', [NotificationController::class, 'eventLogs']);
+        Route::post('/events/{id}/reminders', [NotificationController::class, 'broadcastReminders']);
 
         // Rekapitulasi & Ekspor Laporan Kegiatan
-        Route::get('/events/{id}/recap', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'recap']);
-        Route::get('/events/{id}/export/participants', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'exportParticipants']);
-        Route::get('/events/{id}/export/applicants', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'exportApplicants']);
-        Route::post('/events/{id}/publish-instagram', [\App\Http\Controllers\Api\V1\EventReportingController::class, 'publishInstagram']);
+        Route::get('/events/{id}/recap', [EventReportingController::class, 'recap']);
+        Route::get('/events/{id}/export/participants', [EventReportingController::class, 'exportParticipants']);
+        Route::get('/events/{id}/export/applicants', [EventReportingController::class, 'exportApplicants']);
+        Route::post('/events/{id}/publish-instagram', [EventReportingController::class, 'publishInstagram']);
     });
 
     // ==========================================
-    // 3b. Presensi QR Hari-H (Scanner Panitia)
+    // 4. Presensi QR Hari-H (Attendance Scanner)
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:ORGANIZER,SUPERADMIN'])->group(function () {
-        Route::post('/attendance/check-in', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'checkIn'])
+        Route::post('/attendance/check-in', [AttendanceController::class, 'checkIn'])
             ->middleware('throttle:scanner');
     });
 
     // ==========================================
-    // 4. Modul Pendaftaran Peserta & E-Tiket Mahasiswa
+    // 5. Modul Pendaftaran Peserta & E-Tiket Mahasiswa
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:STUDENT'])->group(function () {
-        Route::post('/events/{id}/register', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'register'])
+        Route::post('/events/{id}/register', [RegistrationController::class, 'register'])
             ->middleware('throttle:registrations');
-        Route::get('/my-tickets', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'myTickets']);
-        Route::get('/my-tickets/{ticket_code}', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'showTicket']);
-        Route::post('/my-tickets/{ticket_code}/cancel', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'cancelTicket'])
+        Route::get('/my-tickets', [RegistrationController::class, 'myTickets']);
+        Route::get('/my-tickets/{ticket_code}', [RegistrationController::class, 'showTicket']);
+        Route::post('/my-tickets/{ticket_code}/cancel', [RegistrationController::class, 'cancelTicket'])
             ->middleware('throttle:registrations');
 
         // Jalur Pendaftaran Oprec Panitia Mahasiswa
-        Route::post('/events/{id}/apply', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'apply'])
+        Route::post('/events/{id}/apply', [RecruitmentController::class, 'apply'])
             ->middleware('throttle:registrations');
-        Route::get('/my-applications', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'myApplications']);
+        Route::get('/my-applications', [RecruitmentController::class, 'myApplications']);
 
         // E-Sertifikat Mahasiswa
-        Route::get('/my-certificates', [\App\Http\Controllers\Api\V1\CertificateController::class, 'myCertificates']);
+        Route::get('/my-certificates', [CertificateController::class, 'myCertificates']);
     });
 
     // Akses Dokumen CV Pendaftar (Mahasiswa pelamar, Panitia pemilik event, atau Superadmin)
     Route::middleware(['auth:sanctum'])->group(function () {
-        Route::get('/registrations/{id}/cv', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'downloadCv']);
+        Route::get('/registrations/{id}/cv', [RecruitmentController::class, 'downloadCv']);
     });
 
     // ==========================================
-    // 5. Modul Super Admin Kurasi (DPM UII)
+    // 6. Modul Super Admin Kurasi (DPM UII)
     // ==========================================
     Route::middleware(['auth:sanctum', 'role:SUPERADMIN'])->prefix('admin')->group(function () {
-        Route::get('/events', [\App\Http\Controllers\Api\V1\AdminEventController::class, 'index']);
-        Route::get('/events/{id}', [\App\Http\Controllers\Api\V1\AdminEventController::class, 'show']);
-        Route::post('/events/{id}/approve', [\App\Http\Controllers\Api\V1\AdminEventController::class, 'approve']);
-        Route::post('/events/{id}/reject', [\App\Http\Controllers\Api\V1\AdminEventController::class, 'reject']);
+        Route::get('/events', [AdminEventController::class, 'index']);
+        Route::get('/events/{id}', [AdminEventController::class, 'show']);
+        Route::post('/events/{id}/approve', [AdminEventController::class, 'approve']);
+        Route::post('/events/{id}/reject', [AdminEventController::class, 'reject']);
     });
 
     // ==========================================

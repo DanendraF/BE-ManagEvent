@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use App\Enums\EventStatusEnum;
 use App\Enums\RegistrationStatusEnum;
-use App\Jobs\SendEventReminderJob;
+use App\Jobs\Notifications\SendEventReminderJob;
 use App\Models\Event;
 use App\Models\NotificationLog;
 use App\Models\Registration;

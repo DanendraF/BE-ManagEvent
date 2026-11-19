@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\Registration;
 use App\Models\User;
-use App\Services\NotificationService;
+use App\Services\Notifications\NotificationService;
 use Illuminate\Console\Command;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
