@@ -342,6 +342,7 @@
           <button class="tab-btn" onclick="switchTab('tab-organizer')">📋 Panitia & DPM</button>
           <button class="tab-btn" onclick="switchTab('tab-participant')">🎟️ Pendaftaran</button>
           <button class="tab-btn" onclick="switchTab('tab-recruitment')">👥 Oprec Panitia</button>
+          <button class="tab-btn" onclick="switchTab('tab-attendance')">🎓 Presensi & Sertifikat</button>
         </nav>
 
         <!-- TAB 0: INTERACTIVE PLAYGROUND (USER DAPAT MENGUBAH / TEST SENDIRI) -->
@@ -383,6 +384,12 @@
                   <option value="my_applications">GET /api/v1/my-applications (Riwayat Lamaran Saya)</option>
                   <option value="event_applicants">GET /api/v1/organizer/events/{id}/applicants (Dashboard Pelamar)</option>
                   <option value="update_selection">PATCH /api/v1/organizer/registrations/{id}/selection (Update Seleksi)</option>
+                </optgroup>
+                <optgroup label="6. Presensi QR Hari-H & E-Sertifikat">
+                  <option value="checkin_attendance">POST /api/v1/attendance/check-in (Scan Presensi Hari-H)</option>
+                  <option value="event_attendance_stats">GET /api/v1/organizer/events/{id}/attendance (Rekap Presensi Panitia)</option>
+                  <option value="verify_cert">GET /api/v1/certificates/verify/{hash} (Verifikasi Publik Sertifikat)</option>
+                  <option value="my_certs">GET /api/v1/my-certificates (E-Sertifikat Saya)</option>
                 </optgroup>
               </select>
             </div>
@@ -701,6 +708,57 @@
             </div>
           </div>
         </div>
+
+        <!-- TAB 6: PRESENSI & E-SERTIFIKAT (FITUR 07) -->
+        <div id="tab-attendance" class="tab-content">
+          <div class="action-group">
+            <h4>Presensi Hari-H (Scanner Panitia)</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Scan Presensi QR (Terbit Sertifikat)</span>
+                <span class="route"><span class="method-tag tag-post">POST</span> /api/v1/attendance/check-in</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadCheckInPlayground()">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="checkInSampleAttendee()">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Rekapitulasi Presensi Panitia (%)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/organizer/events/{id}/attendance</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="getAttendanceRecap()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-group">
+            <h4>E-Sertifikat & Verifikasi Publik</h4>
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Daftar E-Sertifikat Saya (Mahasiswa)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/my-certificates</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #e2e8f0; color: #0f172a;" onclick="loadToPlayground('GET', '/api/v1/my-certificates')">✏️ Edit</button>
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="testRoute('/api/v1/my-certificates')">⚡ Kirim</button>
+              </div>
+            </div>
+
+            <div class="endpoint-row">
+              <div class="endpoint-meta">
+                <span class="label">Verifikasi Keaslian Sertifikat (Publik)</span>
+                <span class="route"><span class="method-tag tag-get">GET</span> /api/v1/certificates/verify/{hash}</span>
+              </div>
+              <div class="btn-actions">
+                <button class="btn-xs" style="background: #0284c7; color: white;" onclick="verifyLatestCertificate()">⚡ Kirim</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Right Response Inspector Panel -->
@@ -998,7 +1056,17 @@
             selection_status: 'INTERVIEW_SCHEDULED',
             notes: 'Jadwal wawancara: Sabtu, 28 Nov via Zoom.'
           }
-        }
+        },
+        checkin_attendance: {
+          method: 'POST',
+          url: '/api/v1/attendance/check-in',
+          body: {
+            qr_payload: 'TEMPEL_QR_PAYLOAD_DI_SINI'
+          }
+        },
+        event_attendance_stats: { method: 'GET', url: '/api/v1/organizer/events/GANTI_EVENT_UUID/attendance', body: null },
+        verify_cert: { method: 'GET', url: '/api/v1/certificates/verify/GANTI_VERIFY_HASH', body: null },
+        my_certs: { method: 'GET', url: '/api/v1/my-certificates', body: null }
       };
 
       const tpl = templates[key];
@@ -1370,6 +1438,123 @@
         renderResponse(res, data, 'GET', path, duration);
       } catch (err) {
         renderResponse(null, { error: err.message }, 'GET', '/api/v1/organizer/events/{id}/applicants');
+      }
+    }
+
+    let lastIssuedCertHash = '';
+
+    async function loadCheckInPlayground() {
+      try {
+        // Fetch student's tickets to get an active QR payload
+        const ticksRes = await fetch(`${baseUrl}/api/v1/my-tickets`, {
+          headers: { 'Accept': 'application/json', 'Authorization': currentToken ? `Bearer ${currentToken}` : '' }
+        });
+        const ticksData = await ticksRes.json();
+        const firstTicket = ticksData.data && ticksData.data.length > 0 ? ticksData.data[0] : null;
+        const payload = firstTicket ? firstTicket.qr_payload : 'PASTE_QR_PAYLOAD_HERE';
+
+        loadToPlayground('POST', '/api/v1/attendance/check-in', {
+          qr_payload: payload
+        });
+      } catch (e) {
+        loadToPlayground('POST', '/api/v1/attendance/check-in', { qr_payload: 'PASTE_QR_PAYLOAD_HERE' });
+      }
+    }
+
+    async function checkInSampleAttendee() {
+      const t0 = performance.now();
+      try {
+        // 1. Get first active ticket from system
+        const pubEvs = await (await fetch(`${baseUrl}/api/v1/events`)).json();
+        const ev = pubEvs.data && pubEvs.data.length > 0 ? pubEvs.data[0] : null;
+        if (!ev) {
+          alert('Belum ada event terpublikasi.');
+          return;
+        }
+
+        // Try to fetch registrations or attendees to get a ticket
+        const regRes = await (await fetch(`${baseUrl}/api/v1/organizer/events/${ev.id}/registrations`, {
+          headers: { 'Accept': 'application/json', 'Authorization': currentToken ? `Bearer ${currentToken}` : '' }
+        })).json();
+
+        let ticketCode = null;
+        if (regRes.data && regRes.data.length > 0 && regRes.data[0].ticket) {
+          ticketCode = regRes.data[0].ticket.ticket_code;
+        }
+
+        if (!ticketCode) {
+          alert('Tidak ditemukan tiket pendaftar aktif untuk discan. Silakan daftar peserta terlebih dahulu di Tab Pendaftaran.');
+          return;
+        }
+
+        const res = await fetch(`${baseUrl}/api/v1/attendance/check-in`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': currentToken ? `Bearer ${currentToken}` : ''
+          },
+          body: JSON.stringify({ ticket_code: ticketCode })
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        if (data.data && data.data.certificate) {
+          lastIssuedCertHash = data.data.certificate.verify_hash;
+        }
+        renderResponse(res, data, 'POST', '/api/v1/attendance/check-in', duration);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'POST', '/api/v1/attendance/check-in');
+      }
+    }
+
+    async function getAttendanceRecap() {
+      const t0 = performance.now();
+      try {
+        const pubEvs = await (await fetch(`${baseUrl}/api/v1/events`)).json();
+        const ev = pubEvs.data && pubEvs.data.length > 0 ? pubEvs.data[0] : null;
+        if (!ev) {
+          alert('Belum ada event terpublikasi.');
+          return;
+        }
+
+        const path = `/api/v1/organizer/events/${ev.id}/attendance`;
+        const res = await fetch(`${baseUrl}${path}`, {
+          headers: { 'Accept': 'application/json', 'Authorization': currentToken ? `Bearer ${currentToken}` : '' }
+        });
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        renderResponse(res, data, 'GET', path, duration);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'GET', '/api/v1/organizer/events/{id}/attendance');
+      }
+    }
+
+    async function verifyLatestCertificate() {
+      const t0 = performance.now();
+      try {
+        let hash = lastIssuedCertHash;
+        if (!hash) {
+          // fetch my certificates
+          const certs = await (await fetch(`${baseUrl}/api/v1/my-certificates`, {
+            headers: { 'Accept': 'application/json', 'Authorization': currentToken ? `Bearer ${currentToken}` : '' }
+          })).json();
+          if (certs.data && certs.data.length > 0) {
+            hash = certs.data[0].verify_hash;
+          }
+        }
+
+        if (!hash) {
+          alert('Belum ada hash sertifikat yang terbit. Silakan lakukan check-in terlebih dahulu.');
+          return;
+        }
+
+        const path = `/api/v1/certificates/verify/${hash}`;
+        const res = await fetch(`${baseUrl}${path}`);
+        const duration = Math.round(performance.now() - t0);
+        const data = await res.json();
+        renderResponse(res, data, 'GET', path, duration);
+      } catch (err) {
+        renderResponse(null, { error: err.message }, 'GET', '/api/v1/certificates/verify/{hash}');
       }
     }
   </script>

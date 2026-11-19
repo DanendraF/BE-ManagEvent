@@ -119,6 +119,26 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 409);
                 }
 
+                // 5c. Day-H QR Scanner: Already Checked In Guard
+                if ($e instanceof \App\Exceptions\AlreadyCheckedInException) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error_code' => 'ERR_ALREADY_CHECKED_IN',
+                        'message' => $e->getMessage() ?: 'Tiket ini sudah pernah dipindai sebelumnya pada presensi hari-H.',
+                        'errors' => [],
+                    ], 409);
+                }
+
+                // 5d. Day-H QR Scanner: Invalid HMAC Cryptographic Signature
+                if ($e instanceof \App\Exceptions\InvalidQrSignatureException) {
+                    return response()->json([
+                        'status' => 'error',
+                        'error_code' => 'ERR_INVALID_QR',
+                        'message' => $e->getMessage() ?: 'Tanda tangan kriptografi QR tidak valid. Tiket palsu atau telah dimodifikasi.',
+                        'errors' => [],
+                    ], 400);
+                }
+
                 // 6. Rate Limiting / Throttle
                 if ($e instanceof ThrottleRequestsException) {
                     return response()->json([

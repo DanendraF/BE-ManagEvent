@@ -861,3 +861,196 @@ Panitia dapat memproses tahapan seleksi calon anggota panitia dari tahap pendaft
   }
 }
 ```
+
+---
+
+## 8. Presensi QR Hari-H & Penerbitan E-Sertifikat Otomatis (Fitur 07)
+
+### 8.1 Pemindaian Presensi QR Code Hari-H (Scanner Panitia)
+Panitia memindai QR Code e-tiket peserta di lokasi acara. Memvalidasi tanda tangan kriptografi HMAC-SHA256 dengan perbandingan aman (*timing-safe* `hash_equals()`). Saat presensi sah, status pendaftaran otomatis berubah menjadi `ATTENDED` dan sistem secara instan menerbitkan E-Sertifikat resmi ber-hash unik.
+- **URL:** `POST /api/v1/attendance/check-in`
+- **Akses:** Panitia Penyelenggara Pemilik Acara (`ORGANIZER`) atau Super Admin (`SUPERADMIN`)
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+- **Rate Limit:** 120 scans/menit (`throttle:scanner`)
+
+**Request Body (Salah Satu Wajib Diisi):**
+```json
+{
+  "qr_payload": "eyJ0aWNrZXRfY29kZSI6IlRLVC0yMDI2LUFaOThLUDdNIiwidXNlcl9pZCI6Ii4uLiJ9"
+}
+```
+*(Fallback manual: dapat mengirimkan `"ticket_code": "TKT-2026-AZ98KP7M"` jika lensa kamera terkendala).*
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Presensi kehadiran hari-H berhasil dikonfirmasi. E-Sertifikat otomatis diterbitkan untuk peserta.",
+  "data": {
+    "ticket_code": "TKT-2026-AZ98KP7M",
+    "is_checked_in": true,
+    "checked_in_at": "2026-11-19T07:03:49Z",
+    "checked_in_by": {
+      "id": "organizer-uuid",
+      "name": "Sarah Nabila (LEM FTI UII)"
+    },
+    "attendee": {
+      "id": "student-uuid",
+      "name": "Ahmad Fauzan",
+      "nim": "21523001",
+      "email": "21523001@students.uii.ac.id",
+      "faculty": "Fakultas Teknologi Industri"
+    },
+    "event": {
+      "id": "event-uuid",
+      "title": "Seminar Nasional AI & Karir Teknologi 2026",
+      "slug": "seminar-nasional-ai-2026"
+    },
+    "certificate": {
+      "certificate_number": "CERT/UII/2026/JWJF5TGH",
+      "verify_hash": "2a29b41732f25c45e03b7b8a9c1f6d3e...",
+      "verify_url": "http://localhost:8000/api/v1/certificates/verify/2a29b41732f25c45e03b7b8a9c1f6d3e...",
+      "issued_at": "2026-11-19T07:03:49Z",
+      "status": "VALID"
+    }
+  }
+}
+```
+
+**Response Error Double Check-in (HTTP 409 Conflict):**
+```json
+{
+  "status": "error",
+  "error_code": "ERR_ALREADY_CHECKED_IN",
+  "message": "Peringatan: Tiket TKT-2026-AZ98KP7M telah dipindai sebelumnya pada 19 Nov 2026 14:03:49 WIB.",
+  "errors": []
+}
+```
+
+**Response Error QR Signature Tampered (HTTP 400 Bad Request):**
+```json
+{
+  "status": "error",
+  "error_code": "ERR_INVALID_QR",
+  "message": "Tanda tangan digital QR Code tidak valid. Tiket dicurigai palsu atau telah dimanipulasi.",
+  "errors": []
+}
+```
+
+---
+
+### 8.2 Rekapitulasi Presensi & Metrik Kehadiran Kegiatan (Akses Panitia)
+Menampilkan daftar kehadiran peserta secara terperinci beserta kalkulasi otomatis statistik kehadiran (*total registered*, *total attended*, *attendance rate percentage*).
+- **URL:** `GET /api/v1/organizer/events/{id}/attendance?is_checked_in=true&search=Fauzan`
+- **Akses:** Panitia Penyelenggara Pemilik Acara (`ORGANIZER`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Data rekapitulasi presensi kegiatan berhasil dimuat.",
+  "data": [
+    {
+      "ticket_code": "TKT-2026-AZ98KP7M",
+      "is_checked_in": true,
+      "checked_in_at": "2026-11-19T07:03:49Z",
+      "attendee": {
+        "id": "student-uuid",
+        "name": "Ahmad Fauzan",
+        "nim": "21523001"
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "statistics": {
+      "total_registered": 100,
+      "total_attended": 85,
+      "total_absent": 15,
+      "attendance_rate_percent": 85.0
+    }
+  }
+}
+```
+
+---
+
+### 8.3 Verifikasi Publik Keaslian E-Sertifikat (Tanpa Login)
+Halaman verifikasi terbuka (*public verification*) yang dapat diakses siapa saja untuk mengonfirmasi keaslian sertifikat yang diterbitkan oleh sistem UII Event Management Platform.
+- **URL:** `GET /api/v1/certificates/verify/{hash}`
+- **Akses:** Publik (Terbuka / Unauthenticated)
+- **Headers:** `Accept: application/json`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Sertifikat resmi terverifikasi dan dinyatakan VALID oleh Universitas Islam Indonesia.",
+  "data": {
+    "id": "certificate-uuid",
+    "certificate_number": "CERT/UII/2026/JWJF5TGH",
+    "verify_hash": "2a29b41732f25c45e03b7b8a9c1f6d3e...",
+    "issued_at": "2026-11-19T07:03:49Z",
+    "status": "VALID",
+    "recipient": {
+      "name": "Ahmad Fauzan",
+      "nim": "21523001",
+      "faculty": "Fakultas Teknologi Industri",
+      "study_program": "Informatika"
+    },
+    "event": {
+      "title": "Seminar Nasional AI & Karir Teknologi 2026",
+      "category": "Seminar",
+      "start_time": "2026-12-10T08:00:00Z"
+    }
+  }
+}
+```
+
+**Response Sertifikat Tidak Ditemukan (HTTP 404 Not Found):**
+```json
+{
+  "status": "error",
+  "error_code": "ERR_NOT_FOUND",
+  "message": "Sertifikat dengan kode verifikasi tersebut tidak ditemukan atau tidak valid.",
+  "errors": []
+}
+```
+
+---
+
+### 8.4 Daftar E-Sertifikat Mahasiswa
+Mengambil seluruh e-sertifikat yang diperoleh mahasiswa dari kegiatan yang telah dihadirinya.
+- **URL:** `GET /api/v1/my-certificates?page=1&limit=15`
+- **Akses:** Mahasiswa Terautentikasi (`STUDENT`)
+- **Headers:** `Authorization: Bearer <token>`
+
+**Response Sukses (HTTP 200 OK):**
+```json
+{
+  "status": "success",
+  "message": "Daftar e-sertifikat kegiatan berhasil dimuat.",
+  "data": [
+    {
+      "id": "certificate-uuid",
+      "certificate_number": "CERT/UII/2026/JWJF5TGH",
+      "verify_hash": "2a29b41732f25c45e03b7b8a9c1f6d3e...",
+      "verify_url": "http://localhost:8000/api/v1/certificates/verify/2a29b41732f25c45e03b7b8a9c1f6d3e...",
+      "issued_at": "2026-11-19T07:03:49Z",
+      "status": "VALID",
+      "event": {
+        "title": "Seminar Nasional AI & Karir Teknologi 2026"
+      }
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "per_page": 15,
+    "total": 1,
+    "last_page": 1
+  }
+}
+```

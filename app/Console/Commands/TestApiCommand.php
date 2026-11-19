@@ -42,9 +42,8 @@ class TestApiCommand extends Command
         $passed = 0;
         $failed = 0;
 
-        // Reset rate limiter for test IP and emails so automated runs are not throttled
-        \Illuminate\Support\Facades\RateLimiter::clear('lemfti@uii.ac.id|127.0.0.1');
-        \Illuminate\Support\Facades\RateLimiter::clear('admin.dpm@uii.ac.id|127.0.0.1');
+        // Reset rate limiter cache so automated CLI test runs are never throttled
+        \Illuminate\Support\Facades\Cache::flush();
 
         // 1. Test POST /api/v1/auth/login with Organizer credentials
         $this->comment('1. Testing POST /api/v1/auth/login (Panitia LEM FTI)...');
@@ -393,6 +392,9 @@ class TestApiCommand extends Command
         $recruitmentRegId = null;
 
         if ($oprecEvent && $studentToken) {
+            // Clean up prior test registration for idempotency across CLI runs
+            \App\Models\Registration::where('user_id', $studentUser->id)->where('event_id', $oprecEvent->id)->delete();
+
             // 21. Test POST /api/v1/events/{id}/apply (Student Recruitment Application with CV)
             $this->comment('21. Testing POST /api/v1/events/{id}/apply (Oprec Application with Hardened CV)...');
             
@@ -484,6 +486,117 @@ class TestApiCommand extends Command
                     $this->error('   ✗ FAILED: Expected 200, got ' . $updateSelRes->getStatusCode() . ' ' . $updateSelRes->getContent());
                     $failed++;
                 }
+            }
+        }
+
+        // ==========================================
+        // Fitur 07: Presensi QR Hari-H & E-Sertifikat
+        // ==========================================
+        $this->comment('--- [MODUL FITUR 07: PRESENSI QR HARI-H & E-SERTIFIKAT] ---');
+        
+        // Register a fresh participant ticket for attendance test
+        $attendeeUser = User::where('email', '21523002@students.uii.ac.id')->first();
+        $attendeeToken = $attendeeUser?->createToken('cli_attendee_tok')->plainTextToken;
+        $attendanceEventId = $regTargetEventId;
+
+        $attendeeQrPayload = null;
+        if ($attendeeUser && $attendeeToken && $attendanceEventId) {
+            $regAttRes = $this->dispatchRequest('POST', "/api/v1/events/{$attendanceEventId}/register", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $attendeeToken,
+            ]);
+
+            if ($regAttRes->getStatusCode() === 201) {
+                $regAttData = json_decode($regAttRes->getContent(), true);
+                $attendeeQrPayload = $regAttData['data']['qr_payload'] ?? null;
+            }
+        }
+
+        $issuedCertHash = null;
+
+        // 25. Test POST /api/v1/attendance/check-in (Day-H QR Scan by Organizer)
+        if ($attendeeQrPayload) {
+            $this->comment('25. Testing POST /api/v1/attendance/check-in (Day-H QR Code Scan & E-Certificate)...');
+            $checkInRes = $this->dispatchRequest('POST', '/api/v1/attendance/check-in', [
+                'qr_payload' => $attendeeQrPayload,
+            ], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($checkInRes->getStatusCode() === 200) {
+                $checkInData = json_decode($checkInRes->getContent(), true);
+                $issuedCertHash = $checkInData['data']['certificate']['verify_hash'] ?? null;
+                $certNum = $checkInData['data']['certificate']['certificate_number'] ?? 'N/A';
+                $this->info('   ✓ Status: 200 OK | Presensi Sah | E-Sertifikat Terbit: ' . $certNum);
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $checkInRes->getStatusCode() . ' ' . $checkInRes->getContent());
+                $failed++;
+            }
+
+            // 26. Test Anti-Double Check-In Guard
+            $this->comment('26. Testing Anti-Double Check-In Guard (Scan ticket second time)...');
+            $dupCheckInRes = $this->dispatchRequest('POST', '/api/v1/attendance/check-in', [
+                'qr_payload' => $attendeeQrPayload,
+            ], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($dupCheckInRes->getStatusCode() === 409) {
+                $this->info('   ✓ Status: 409 Conflict | Double check-in berhasil dicegah (ERR_ALREADY_CHECKED_IN)');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 409, got ' . $dupCheckInRes->getStatusCode());
+                $failed++;
+            }
+        }
+
+        // 27. Test GET /api/v1/certificates/verify/{hash} (Public Verification)
+        if ($issuedCertHash) {
+            $this->comment('27. Testing GET /api/v1/certificates/verify/' . substr($issuedCertHash, 0, 16) . '... (Public Verification)...');
+            $pubVerifyRes = $this->dispatchRequest('GET', "/api/v1/certificates/verify/{$issuedCertHash}");
+
+            if ($pubVerifyRes->getStatusCode() === 200) {
+                $verifyData = json_decode($pubVerifyRes->getContent(), true);
+                $this->info('   ✓ Status: 200 OK | Publik Berhasil Memverifikasi Sertifikat | Status: ' . ($verifyData['data']['status'] ?? 'VALID'));
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $pubVerifyRes->getStatusCode());
+                $failed++;
+            }
+        }
+
+        // 28. Test GET /api/v1/organizer/events/{id}/attendance (Organizer Attendance Statistics)
+        if ($attendanceEventId) {
+            $this->comment('28. Testing GET /api/v1/organizer/events/{id}/attendance (Attendance Recap & Metrics)...');
+            $attListRes = $this->dispatchRequest('GET', "/api/v1/organizer/events/{$attendanceEventId}/attendance", [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $orgToken,
+            ]);
+
+            if ($attListRes->getStatusCode() === 200) {
+                $attData = json_decode($attListRes->getContent(), true);
+                $rate = $attData['meta']['statistics']['attendance_rate_percent'] ?? 0;
+                $this->info('   ✓ Status: 200 OK | Rekapitulasi Presensi Panitia | Tingkat Kehadiran: ' . $rate . '%');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $attListRes->getStatusCode());
+                $failed++;
+            }
+        }
+
+        // 29. Test GET /api/v1/my-certificates (Student Certificate List)
+        if ($attendeeToken) {
+            $this->comment('29. Testing GET /api/v1/my-certificates (Student Earned Certificates)...');
+            $myCertsRes = $this->dispatchRequest('GET', '/api/v1/my-certificates', [], [
+                'HTTP_AUTHORIZATION' => 'Bearer ' . $attendeeToken,
+            ]);
+
+            if ($myCertsRes->getStatusCode() === 200) {
+                $myCertsData = json_decode($myCertsRes->getContent(), true);
+                $this->info('   ✓ Status: 200 OK | Mahasiswa Memperoleh ' . count($myCertsData['data'] ?? []) . ' E-Sertifikat Resmi');
+                $passed++;
+            } else {
+                $this->error('   ✗ FAILED: Expected 200, got ' . $myCertsRes->getStatusCode());
+                $failed++;
             }
         }
 

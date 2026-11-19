@@ -29,6 +29,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/categories', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'categories']);
     Route::get('/events', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'index']);
     Route::get('/events/{slug}', [\App\Http\Controllers\Api\V1\EventCatalogController::class, 'show']);
+    Route::get('/certificates/verify/{hash}', [\App\Http\Controllers\Api\V1\CertificateController::class, 'verify']);
 
     // ==========================================
     // 3. Modul Panitia Penyelenggara (Organizer)
@@ -43,6 +44,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/events/{id}/registrations', [\App\Http\Controllers\Api\V1\RegistrationController::class, 'eventRegistrations']);
         Route::get('/events/{id}/applicants', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'eventApplicants']);
         Route::patch('/registrations/{id}/selection', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'updateSelection']);
+        Route::get('/events/{id}/attendance', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'eventAttendance']);
+    });
+
+    // ==========================================
+    // 3b. Presensi QR Hari-H (Scanner Panitia)
+    // ==========================================
+    Route::middleware(['auth:sanctum', 'role:ORGANIZER,SUPERADMIN'])->group(function () {
+        Route::post('/attendance/check-in', [\App\Http\Controllers\Api\V1\AttendanceController::class, 'checkIn'])
+            ->middleware('throttle:scanner');
     });
 
     // ==========================================
@@ -59,6 +69,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/events/{id}/apply', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'apply'])
             ->middleware('throttle:registrations');
         Route::get('/my-applications', [\App\Http\Controllers\Api\V1\RecruitmentController::class, 'myApplications']);
+
+        // E-Sertifikat Mahasiswa
+        Route::get('/my-certificates', [\App\Http\Controllers\Api\V1\CertificateController::class, 'myCertificates']);
     });
 
     // Akses Dokumen CV Pendaftar (Mahasiswa pelamar, Panitia pemilik event, atau Superadmin)
