@@ -1,0 +1,17 @@
+name: Keep Alive Render Backend
+
+on:
+  schedule:
+    # Runs every 12 minutes (Render free tier sleeps after 15 mins of inactivity)
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Keep-Alive Ping
+        run: |
+          echo "Pinging Render backend to prevent sleep..."
+          curl -s -m 20 "https://be-managevent.onrender.com/api/v1/events" > /dev/null && echo "Ping successful! Server is awake." || echo "Ping request finished."
