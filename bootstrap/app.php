@@ -94,6 +94,16 @@ return Application::configure(basePath: dirname(__DIR__))
                     ], 404);
                 }
 
+                // 4b. Invalid UUID Syntax in PostgreSQL (22P02) -> 404
+                if ($e instanceof \Illuminate\Database\QueryException && (string) $e->getCode() === '22P02') {
+                    return response()->json([
+                        'status' => 'error',
+                        'error_code' => 'ERR_NOT_FOUND',
+                        'message' => 'Format ID kegiatan tidak valid atau data tidak ditemukan di database.',
+                        'errors' => [],
+                    ], 404);
+                }
+
                 // 5. Unique Constraint Violation (Anti-Double Entry in PostgreSQL)
                 if ($e instanceof UniqueConstraintViolationException) {
                     return response()->json([

@@ -54,13 +54,17 @@ class AuthService
      * @return array{user: User, token: string, token_type: string}
      * @throws ValidationException
      */
-    public function login(string $email, string $password): array
+    public function login(string $emailOrNim, string $password): array
     {
-        $user = User::with('roles')->where('email', $email)->first();
+        $clean = trim($emailOrNim);
+        $user = User::with('roles')
+            ->where('email', $clean)
+            ->orWhere('nim', $clean)
+            ->first();
 
         if (! $user || ! Hash::check($password, $user->password)) {
             throw ValidationException::withMessages([
-                'email' => ['Kredensial email atau password yang dimasukkan salah.'],
+                'email' => ['Kredensial NIM/Email atau password yang dimasukkan salah.'],
             ]);
         }
 

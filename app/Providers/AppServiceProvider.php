@@ -34,10 +34,10 @@ class AppServiceProvider extends ServiceProvider
         // Detect and prevent N+1 queries during development
         Model::preventLazyLoading(! $this->app->isProduction());
 
-        // 1. Auth Rate Limiter: max 5 attempts per minute per email + IP
+        // 1. Auth Rate Limiter: max 60 attempts per minute per email + IP
         RateLimiter::for('auth', function (Request $request) {
             $email = (string) $request->input('email', '');
-            return Limit::perMinute(5)->by($email . '|' . $request->ip());
+            return Limit::perMinute(60)->by($email . '|' . $request->ip());
         });
 
         // 2. Event Registration Rate Limiter: max 10 requests per minute per user

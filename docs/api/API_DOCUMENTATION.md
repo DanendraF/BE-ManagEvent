@@ -145,6 +145,14 @@
 - **Headers:** `Content-Type: application/json`, `Accept: application/json`
 
 **Request Body:**
+*Mendukung `email` atau `identifier` (dapat berupa NIM mahasiswa seperti `23525055` / `21523001` atau Email resmi UII).*
+```json
+{
+  "identifier": "23525055",
+  "password": "password123"
+}
+```
+*Atau format klasik dengan email:*
 ```json
 {
   "email": "21523001@students.uii.ac.id",

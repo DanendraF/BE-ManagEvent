@@ -188,14 +188,14 @@ class RegistrationService
     {
         $event = Event::findOrFail($eventId);
 
-        if (! $user->isSuperAdmin() && $event->organizer_id !== $user->id) {
+        if (! $user->isSuperAdmin() && ! $user->isOrganizer() && $event->organizer_id !== $user->id) {
             throw new AccessDeniedHttpException('Anda tidak memiliki wewenang untuk melihat rekap pendaftar acara ini.');
         }
 
         $perPage = min(max($perPage, 1), 50);
 
         $query = Registration::where('event_id', $eventId)
-            ->with(['user', 'ticket']);
+            ->with(['user', 'ticket', 'event']);
 
         if ($status) {
             $query->where('status', strtoupper($status));

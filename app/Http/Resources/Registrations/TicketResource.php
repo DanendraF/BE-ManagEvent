@@ -19,7 +19,7 @@ class TicketResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $registration = $this->registration;
+        $registration = $this->relationLoaded('registration') ? $this->registration : null;
         $event = $registration?->event;
         $user = $registration?->user;
 

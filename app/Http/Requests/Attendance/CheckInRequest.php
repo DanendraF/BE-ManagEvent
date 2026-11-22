@@ -25,7 +25,7 @@ class CheckInRequest extends FormRequest
     {
         return [
             'qr_payload' => ['required_without:ticket_code', 'nullable', 'string'],
-            'ticket_code' => ['required_without:qr_payload', 'nullable', 'string', 'max:50'],
+            'ticket_code' => ['required_without:qr_payload', 'nullable', 'string', 'max:255'],
         ];
     }
 

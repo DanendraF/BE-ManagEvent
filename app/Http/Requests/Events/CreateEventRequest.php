@@ -23,13 +23,37 @@ class CreateEventRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        // Support 'PARTICIPANT' as alias for 'PARTICIPANT_EVENT'
-        if ($this->activity_type === 'PARTICIPANT') {
+        // Support 'PARTICIPANT', 'SEMINAR', 'WORKSHOP', 'LOMBA', etc. as alias for 'PARTICIPANT_EVENT'
+        if ($this->activity_type === 'PARTICIPANT' || ($this->activity_type && $this->activity_type !== ActivityTypeEnum::COMMITTEE_RECRUITMENT->value)) {
             $this->merge(['activity_type' => ActivityTypeEnum::PARTICIPANT_EVENT->value]);
         }
 
-        if ($this->has('category_id') && is_numeric($this->category_id)) {
+        // Automatic category mapping if string name/code was sent
+        if (!$this->has('category_id') || !is_numeric($this->category_id)) {
+            $catMap = [
+                'SEMINAR' => 1,
+                'WORKSHOP' => 2,
+                'LOMBA' => 3,
+                'KONSER' => 4,
+                'KONSER & FESTIVAL' => 4,
+                'COMMITTEE_RECRUITMENT' => 5,
+                'OPEN RECRUITMENT' => 5,
+                'OPREC' => 5,
+            ];
+            $catKey = strtoupper(trim((string) ($this->category ?? $this->activity_type ?? 'SEMINAR')));
+            $this->merge(['category_id' => $catMap[$catKey] ?? 1]);
+        } else {
             $this->merge(['category_id' => (int) $this->category_id]);
+        }
+
+        // Location fallback from venue_name
+        if (!$this->has('location') && $this->has('venue_name')) {
+            $this->merge(['location' => (string) $this->venue_name]);
+        }
+
+        // Poster URL fallback
+        if (!$this->has('poster_url') || empty($this->poster_url)) {
+            $this->merge(['poster_url' => 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80']);
         }
 
         if ($this->has('quota_total') && is_numeric($this->quota_total)) {
@@ -39,6 +63,22 @@ class CreateEventRequest extends FormRequest
         // If not committee recruitment, strip empty divisions to avoid required_with issues
         if ($this->activity_type !== ActivityTypeEnum::COMMITTEE_RECRUITMENT->value) {
             $this->request->remove('divisions');
+        } elseif ($this->has('divisions') && is_array($this->divisions)) {
+            $formattedDivisions = [];
+            foreach ($this->divisions as $div) {
+                if (is_string($div)) {
+                    $formattedDivisions[] = ['name' => $div, 'quota' => 10];
+                } elseif (is_array($div) && isset($div['name'])) {
+                    $formattedDivisions[] = [
+                        'name' => (string) $div['name'],
+                        'quota' => (int) ($div['quota'] ?? 10),
+                        'description' => (string) ($div['description'] ?? '')
+                    ];
+                }
+            }
+            if (!empty($formattedDivisions)) {
+                $this->merge(['divisions' => $formattedDivisions]);
+            }
         }
     }
 

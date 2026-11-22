@@ -75,9 +75,9 @@ Route::prefix('v1')->group(function () {
     });
 
     // ==========================================
-    // 5. Modul Pendaftaran Peserta & E-Tiket Mahasiswa
+    // 5. Modul Pendaftaran Peserta & E-Tiket Mahasiswa / Pengguna Terautentikasi
     // ==========================================
-    Route::middleware(['auth:sanctum', 'role:STUDENT'])->group(function () {
+    Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/events/{id}/register', [RegistrationController::class, 'register'])
             ->middleware('throttle:registrations');
         Route::get('/my-tickets', [RegistrationController::class, 'myTickets']);

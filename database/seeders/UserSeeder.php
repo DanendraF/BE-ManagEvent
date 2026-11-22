@@ -114,5 +114,53 @@ class UserSeeder extends Seeder
             'email_verified_at' => now(),
         ])->save();
         $student3->roles()->syncWithoutDetaching([$studentRole->id]);
+
+        // 6. Student Demo 4 (Muhammad Raynor Athaillah - Frontend Default User)
+        $raynor = User::firstOrNew(['email' => '23525055@students.uii.ac.id']);
+        if (! $raynor->exists) {
+            $raynor->id = (string) Str::uuid();
+        }
+        $raynor->fill([
+            'nim' => '23525055',
+            'name' => 'Muhammad Raynor Athaillah',
+            'password' => Hash::make('password123'),
+            'phone_number' => '081234567890',
+            'faculty' => 'Fakultas Teknologi Industri',
+            'study_program' => 'Teknik Mesin',
+            'email_verified_at' => now(),
+        ])->save();
+        $raynor->roles()->syncWithoutDetaching([$studentRole->id]);
+
+        // 7. Panitia Demo (panitia@uii.ac.id)
+        $panitiaDemo = User::firstOrNew(['email' => 'panitia@uii.ac.id']);
+        if (! $panitiaDemo->exists) {
+            $panitiaDemo->id = (string) Str::uuid();
+        }
+        $panitiaDemo->fill([
+            'nim' => '20523120',
+            'name' => 'Panitia UII (Sarah Nabila)',
+            'password' => Hash::make('password123'),
+            'phone_number' => '081298765432',
+            'faculty' => 'Fakultas Teknologi Industri',
+            'study_program' => 'Informatika',
+            'email_verified_at' => now(),
+        ])->save();
+        $panitiaDemo->roles()->syncWithoutDetaching([$organizerRole->id]);
+
+        // 8. Admin DPK Demo (budi.hartono@uii.ac.id)
+        $adminDemo = User::firstOrNew(['email' => 'budi.hartono@uii.ac.id']);
+        if (! $adminDemo->exists) {
+            $adminDemo->id = (string) Str::uuid();
+        }
+        $adminDemo->fill([
+            'nim' => 'NIP.19740512',
+            'name' => 'Dr. Ir. Budi Hartono, M.T.',
+            'password' => Hash::make('password123'),
+            'phone_number' => '081122334455',
+            'faculty' => 'Direktorat Pembinaan Kemahasiswaan',
+            'study_program' => 'Direktur DPK UII',
+            'email_verified_at' => now(),
+        ])->save();
+        $adminDemo->roles()->syncWithoutDetaching([$superadminRole->id]);
     }
 }

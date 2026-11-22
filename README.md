@@ -111,14 +111,18 @@ Aplikasi backend akan aktif di: `http://127.0.0.1:8000`
 
 ## 👥 Akun Demo Uji Coba (Tersedia Pasca Seeding)
 
-Semua akun demo di-seed dengan password bawaan: **`Password123!`**
+Semua akun demo di-seed dengan password bawaan: **`password123`** (atau **`Password123!`** untuk akun pengujian backend). Login dapat menggunakan **Email** maupun **NIM murni**.
 
-| Role Sistem | Nama Pengguna | Alamat Email | Keterangan Akses |
+| Role Sistem | Nama Pengguna | Alamat Email / NIM | Keterangan Akses |
 |---|---|---|---|
-| **SUPERADMIN** | DPM UII (Dewan Perwakilan Mahasiswa) | `admin.dpm@uii.ac.id` | Hak penuh kurasi, approval acara, & audit log kampus |
-| **ORGANIZER** | Sarah Nabila (LEM FTI UII) | `lemfti@uii.ac.id` | Pengelola & konseptor kegiatan ormawa / UKM |
-| **STUDENT** | Danendra Farrel Adriansyah (NIM: 21523001) | `21523001@students.uii.ac.id` | Mahasiswa FTI (Pendaftar peserta, tiket, & sertifikat) |
-| **STUDENT** | Muhammad Raihan Pratama (NIM: 21523002) | `21523002@students.uii.ac.id` | Mahasiswa FTI (Pendaftar peserta & tiket aktif) |
+| **SUPERADMIN** | Dr. Ir. Budi Hartono, M.T. (Admin DPK) | `budi.hartono@uii.ac.id` / `admin.dpm@uii.ac.id` | Hak penuh kurasi, approval acara, & audit log kampus |
+| **ORGANIZER** | Panitia UII / Sarah Nabila (LEM FTI UII) | `panitia@uii.ac.id` / `lemfti@uii.ac.id` (NIM: `20523120`) | Pengelola & konseptor kegiatan ormawa / UKM |
+| **STUDENT** | Muhammad Raynor Athaillah (Default Frontend) | `23525055@students.uii.ac.id` (NIM: `23525055`) | Mahasiswa Mesin FTI (Default persona frontend UIIEvent) |
+| **STUDENT** | Danendra Farrel Adriansyah | `21523001@students.uii.ac.id` (NIM: `21523001`) | Mahasiswa Informatika FTI (Pendaftar peserta, tiket, & sertifikat) |
+| **STUDENT** | Muhammad Raihan Pratama | `21523002@students.uii.ac.id` (NIM: `21523002`) | Mahasiswa Informatika FTI (Pendaftar peserta & tiket aktif) |
+
+> 🌐 **Koneksi Frontend Angular (`UIIEvent`):**  
+> Backend sudah dilengkapi konfigurasi CORS (`config/cors.php`) yang mengizinkan origin SPA Angular di `http://localhost:4200` dengan credential Sanctum aktif.
 
 ---
 
