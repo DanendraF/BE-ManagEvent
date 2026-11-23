@@ -10,6 +10,7 @@ use App\Enums\RegistrationStatusEnum;
 use App\Enums\SelectionStatusEnum;
 use App\Models\Event;
 use App\Models\Registration;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
@@ -102,7 +103,28 @@ class RecruitmentService
                 'registered_at' => now(),
             ]);
 
-            return $registration->load(['user', 'event.divisions']);
+            // 8. Generate Cryptographically Signed Ticket & QR Payload for Screening / Attendance / Check-in
+            $ticketCode = 'TKT-OPREC-' . date('Y') . '-' . strtoupper(Str::random(6));
+            $rawSecret = config('services.qr.hmac_secret', config('app.key'));
+            $signature = hash_hmac('sha256', "{$ticketCode}|{$user->id}|{$event->id}", $rawSecret);
+            $qrPayload = json_encode([
+                'ticket_code' => $ticketCode,
+                'user_id' => $user->id,
+                'event_id' => $event->id,
+                'signature' => $signature,
+                'timestamp' => now()->timestamp,
+            ], JSON_THROW_ON_ERROR);
+
+            Ticket::create([
+                'id' => (string) Str::uuid(),
+                'registration_id' => $registration->id,
+                'ticket_code' => $ticketCode,
+                'qr_payload' => $qrPayload,
+                'hmac_signature' => $signature,
+                'is_checked_in' => false,
+            ]);
+
+            return $registration->load(['user', 'event.divisions', 'ticket']);
         });
     }
 

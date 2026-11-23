@@ -66,10 +66,18 @@ class AttendanceService
                 throw new NotFoundHttpException("Tiket dengan referensi '{$ticketCode}' tidak terdaftar pada sistem.");
             }
 
-            // 3. IDOR Authorization Check: Scanner must be event organizer, committee organizer, or Superadmin
+            // 3. IDOR Authorization Check: Scanner must be event organizer, committee member, or Superadmin
             $event = $ticket->registration->event;
             if (! $scannerUser->isSuperAdmin() && ! $scannerUser->isOrganizer() && $event->organizer_id !== $scannerUser->id) {
-                throw new AccessDeniedHttpException('Akses ditolak: Anda bukan panitia penyelenggara dari kegiatan ini.');
+                $isCommitteeMember = \App\Models\Registration::where('user_id', $scannerUser->id)
+                    ->where('event_id', $event->id)
+                    ->where('registration_type', 'COMMITTEE')
+                    ->where('status', '!=', RegistrationStatusEnum::CANCELLED->value)
+                    ->exists();
+
+                if (! $isCommitteeMember) {
+                    throw new AccessDeniedHttpException('Akses ditolak: Anda bukan panitia penyelenggara dari kegiatan ini.');
+                }
             }
 
             // 4. Anti-Double Check-In Guard
@@ -127,7 +135,15 @@ class AttendanceService
         $event = Event::findOrFail($eventId);
 
         if (! $user->isSuperAdmin() && ! $user->isOrganizer() && $event->organizer_id !== $user->id) {
-            throw new AccessDeniedHttpException('Anda tidak memiliki wewenang untuk melihat data presensi kegiatan ini.');
+            $isCommitteeMember = \App\Models\Registration::where('user_id', $user->id)
+                ->where('event_id', $event->id)
+                ->where('registration_type', 'COMMITTEE')
+                ->where('status', '!=', RegistrationStatusEnum::CANCELLED->value)
+                ->exists();
+
+            if (! $isCommitteeMember) {
+                throw new AccessDeniedHttpException('Anda tidak memiliki wewenang untuk melihat data presensi kegiatan ini.');
+            }
         }
 
         $baseQuery = Ticket::with(['registration.user', 'registration.event', 'checkedInBy'])
