@@ -26,9 +26,15 @@ return [
         'http://127.0.0.1:4200',
         'http://localhost:8000',
         'http://127.0.0.1:8000',
+        'https://uii-event.vercel.app',
+        'https://be-managevent.onrender.com',
     ],
 
-    'allowed_origins_patterns' => [],
+    // Allow all Vercel preview deployments (branch previews, etc.)
+    'allowed_origins_patterns' => [
+        '#^https://uii-event(-[a-z0-9]+)?-danendraf\.vercel\.app$#',
+        '#^https://uii-event.*\.vercel\.app$#',
+    ],
 
     'allowed_headers' => ['*'],
 

@@ -16,6 +16,15 @@ use App\Http\Controllers\Api\V1\Registrations\RegistrationController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    // Health-check / Keep-alive (Public – No Auth)
+    Route::get('/ping', function () {
+        return response()->json([
+            'status' => 'ok',
+            'message' => 'UII Event Backend is alive!',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    });
+
     // ==========================================
     // 1. Modul Autentikasi & RBAC (Auth)
     // ==========================================
